@@ -1,17 +1,19 @@
 const $=s=>document.querySelector(s);
 async function jget(p){ const r=await fetch(p); return r.json() }
-function cardHTML(x, kind){
-  const img=(x.images&&x.images[0])||x.image||x.cover||'/frontend/assets/img/placeholder.svg';
-  return `<article class="card reveal"><img loading="lazy" src="${img}" alt="${x.title}"><div class="card-body"><div class="eyebrow">${kind||''}</div><div class="card-title">${x.title}</div><div class="muted" style="font-size:13px">${(x.desc||'').slice(0,120)}</div></div></article>`
+function cardHTML(x, kind, href, imgOverride){
+  const img=imgOverride||(x.images&&x.images[0])||x.image||x.cover||'/frontend/assets/img/placeholder.svg';
+  const inner=`<img loading="lazy" src="${img}" alt="${x.title}"><div class="card-body"><div class="eyebrow">${kind||''}</div><div class="card-title">${x.title}</div><div class="muted" style="font-size:13px">${(x.desc||'').slice(0,120)}</div></div>`;
+  return href?`<a href="${href}"><article class="card reveal">${inner}</article></a>`:`<article class="card reveal">${inner}</article>`;
 }
 async function load(){
   try{
-    const [projects,catalog,materials,reviews]=await Promise.all([
-      jget('/api/v1/projects'), jget('/api/v1/catalog'), jget('/api/v1/materials'), jget('/api/v1/reviews')
+    const [projects,catalog,materials,reviews,categories]=await Promise.all([
+      jget('/api/v1/projects'), jget('/api/v1/catalog'), jget('/api/v1/materials'), jget('/api/v1/reviews'), jget('/api/v1/categories')
     ]);
-    const pg=$('#projectsGrid'); if(pg) pg.innerHTML=(projects.slice(0,6).map(p=>cardHTML(p,p.category||'проект')).join('')||'<div class="muted">Проекты скоро появятся</div>');
-    const cg=$('#catalogGrid'); if(cg) cg.innerHTML=(catalog.slice(0,6).map(c=>cardHTML(c,'каталог')).join('')||'<div class="muted">Каталог наполняется</div>');
-    const mg=$('#materialsGrid'); if(mg) mg.innerHTML=(materials.slice(0,6).map(m=>cardHTML(m,m.category)).join('')||'');
+    const catById={}; (categories||[]).forEach(c=>catById[c.id]=c.slug);
+    const pg=$('#projectsGrid'); if(pg) pg.innerHTML=(projects.slice(0,6).map(p=>cardHTML(p,p.category||'проект','/project/'+p.slug)).join('')||'<div class="muted">Проекты скоро появятся</div>');
+    const cg=$('#catalogGrid'); if(cg) cg.innerHTML=(catalog.slice(0,6).map(c=>cardHTML(c,catById[c.categoryId]||'каталог',c.slug?'/catalog/'+(catById[c.categoryId]||'')+'/'+c.slug:null)).join('')||'<div class="muted">Каталог наполняется</div>');
+    const mg=$('#materialsGrid'); if(mg) mg.innerHTML=(materials.slice(0,6).map(m=>cardHTML(m,m.category,null,m.image)).join('')||'');
     const rg=$('#reviewsGrid'); if(rg) rg.innerHTML=(reviews.filter(r=>r.approved!==false).slice(0,4).map(r=>`<div class="card" style="padding:18px"><div style="color:#C9A86A">${'★'.repeat(r.rating||5)}</div><div style="margin:8px 0">${r.text}</div><div class="muted">${r.author} · ${r.role||''}</div></div>`).join('')||'');
     observe();
   }catch(e){}

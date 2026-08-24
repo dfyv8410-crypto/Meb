@@ -1,1 +1,23 @@
-{"siteName":"MEB","tagline":"Bespoke furniture"}
+{
+  "nav.catalog": "Catalog",
+  "nav.projects": "Projects",
+  "nav.materials": "Materials",
+  "nav.contacts": "Contacts",
+  "cta.discuss": "Discuss your project",
+  "cta.view_projects": "View projects",
+  "footer.copyright": "Premium furniture",
+  "footer.home": "Home",
+  "project.gallery": "Project gallery",
+  "project.want_same": "Want the same?",
+  "project.calc_48h": "We will visit, measure and estimate your project within 48 hours",
+  "item.specs": "Specifications",
+  "item.request_calc": "Request a quote",
+  "item.more": "Details",
+  "category.positions": "items",
+  "category.soon": "This section is coming soon",
+  "spec.size": "Dimensions",
+  "spec.material": "Material",
+  "spec.facade": "Facades",
+  "spec.hardware": "Hardware",
+  "spec.finish": "Finish"
+}

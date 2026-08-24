@@ -230,11 +230,16 @@ router.post('/api/v1/leads-public', async(req,res)=>{
 
 // SEO
 router.get('/api/v1/seo/sitemap.xml', async(req,res)=>{
-  const pages=db.all('pages'), projects=db.all('projects');
+  const pages=db.all('pages'), projects=db.all('projects'), cats=db.all('categories'), items=db.all('catalog');
   let xml=`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
   xml+=`<url><loc>/</loc></url>`;
-  pages.forEach(p=> xml+=`<url><loc>/p/${p.slug}</loc></url>`);
-  projects.forEach(p=> xml+=`<url><loc>/project/${p.slug}</loc></url>`);
+  pages.filter(p=>p.published!==false).forEach(p=> xml+=`<url><loc>/p/${p.slug}</loc></url>`);
+  projects.filter(p=>p.published!==false).forEach(p=> xml+=`<url><loc>/project/${p.slug}</loc></url>`);
+  cats.forEach(c=> xml+=`<url><loc>/catalog/${c.slug}</loc></url>`);
+  items.filter(i=>i.published!==false).forEach(i=>{
+    const c=cats.find(c=>c.id===i.categoryId);
+    if(c) xml+=`<url><loc>/catalog/${c.slug}/${i.slug}</loc></url>`;
+  });
   xml+=`</urlset>`;
   send(res,200,xml,{'Content-Type':'application/xml'})
 })
@@ -323,6 +328,35 @@ router.get('/p/:slug', async(req,res,params)=>{
   const html=pageRender.renderPage(page);
   res.writeHead(200,{...sec.headers(),'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
   res.end(html);
+})
+
+// PUBLIC SITE: project & catalog pages
+const siteRender=require('./frontend/render');
+function langOf(req){
+  const q=url.parse(req.url,true).query;
+  if(q.lang) return String(q.lang)==='en'?'en':'ru';
+  const al=(req.headers['accept-language']||'').toLowerCase();
+  return al.startsWith('en')?'en':'ru';
+}
+router.get('/project/:slug', async(req,res,params)=>{
+  const p=db.bySlug('projects',params.slug);
+  if(!p||p.published===false) return send(res,404,'404 · <a href="/">На главную</a>',{'Content-Type':'text/html; charset=utf-8'});
+  res.writeHead(200,{...sec.headers(),'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
+  res.end(siteRender.renderProject(p,langOf(req)));
+})
+router.get('/catalog/:cat/:slug', async(req,res,params)=>{
+  const cat=db.bySlug('categories',params.cat);
+  const item=db.all('catalog').find(x=>x.slug===params.slug&&x.categoryId===(cat&&cat.id));
+  if(!item) return send(res,404,'404 · <a href="/">На главную</a>',{'Content-Type':'text/html; charset=utf-8'});
+  res.writeHead(200,{...sec.headers(),'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
+  res.end(siteRender.renderItem(item,cat,langOf(req)));
+})
+router.get('/catalog/:cat', async(req,res,params)=>{
+  const cat=db.bySlug('categories',params.cat);
+  if(!cat) return send(res,404,'404 · <a href="/">На главную</a>',{'Content-Type':'text/html; charset=utf-8'});
+  const items=db.all('catalog').filter(x=>x.categoryId===cat.id&&x.published!==false);
+  res.writeHead(200,{...sec.headers(),'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
+  res.end(siteRender.renderCategory(cat,items,langOf(req)));
 })
 
 // STATIC

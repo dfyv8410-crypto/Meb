@@ -1,1 +1,23 @@
-{"siteName":"MEB","tagline":"Индивидуальная мебель"}
+{
+  "nav.catalog": "Каталог",
+  "nav.projects": "Проекты",
+  "nav.materials": "Материалы",
+  "nav.contacts": "Контакты",
+  "cta.discuss": "Обсудить проект",
+  "cta.view_projects": "Смотреть проекты",
+  "footer.copyright": "Премиальная мебель",
+  "footer.home": "Главная",
+  "project.gallery": "Галерея проекта",
+  "project.want_same": "Хотите так же?",
+  "project.calc_48h": "Приедем, замерим и просчитаем ваш проект за 48 часов",
+  "item.specs": "Характеристики",
+  "item.request_calc": "Запросить расчёт",
+  "item.more": "Подробнее",
+  "category.positions": "позиций",
+  "category.soon": "Скоро наполним этот раздел",
+  "spec.size": "Размеры",
+  "spec.material": "Материал",
+  "spec.facade": "Фасады",
+  "spec.hardware": "Фурнитура",
+  "spec.finish": "Покрытие"
+}
