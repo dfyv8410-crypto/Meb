@@ -156,15 +156,26 @@ async function restore(id){ if(!confirm('Восстановить данные �
 
 /* ============ MEDIA ============ */
 async function renderMedia(list){
-  list.innerHTML=`<div class="card"><b>Медиа</b><div style="margin-top:8px"><input type="file" id="fileIn">
+  const items=await jget('/api/v1/media')||[];
+  const folders=[...new Set((items||[]).map(m=>m.folder||''))];
+  list.innerHTML=`<div class="card"><b>Медиа</b>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <button class="btn btn-ghost" onclick="filterFolder('')">Все</button>
+      ${folders.filter(Boolean).map(f=>`<button class="btn btn-ghost" onclick="filterFolder('${esc(f)}')">${esc(f)}</button>`).join('')}
+    </div>
+    <div style="margin-top:10px"><input type="file" id="fileIn">
+    <input id="folderIn" class="input" style="max-width:200px;display:inline-block;margin-left:8px" placeholder="Папка (опц.)">
     <input id="altIn" class="input" placeholder="ALT — кратко опишите изображение (важно для SEO)" style="margin-top:8px">
     <button class="btn" onclick="uploadMedia()">Загрузить</button></div>
     <input id="mediaSearch" class="input" placeholder="Поиск…" style="margin-top:10px" oninput="loadMedia(this.value)">
     <div id="mediaGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:12px"></div></div>`;
+  window._curFolder='';
   loadMedia('');
 }
+function filterFolder(f){ window._curFolder=f; loadMedia(el('mediaSearch').value); }
 async function loadMedia(q){
-  const items=await jget('/api/v1/media')||[];
+  const fp=window._curFolder!==undefined? '&folder='+encodeURIComponent(window._curFolder):'';
+  const items=await jget('/api/v1/media?x=1'+fp)||[];
   const f=(items||[]).filter(m=>!q||(m.originalName||'').toLowerCase().includes(q.toLowerCase()));
   const g=el('mediaGrid'); if(g) g.innerHTML=f.map(m=>`<div class="card" style="padding:8px"><img src="${m.url}" loading="lazy" alt="${esc(m.alt)}" style="width:100%;aspect-ratio:1;object-fit:cover;background:#eee"><div style="font-size:11px;margin-top:4px">${esc(m.originalName)}</div><div style="font-size:10px;color:var(--muted)">${m.width?m.width+'×'+m.height+' · ':''}${Math.round((m.size||0)/1024)} KB</div><button style="width:100%;margin-top:4px;font-size:11px" onclick="copyUrl('${m.url}')">Копировать URL</button><button style="width:100%;margin-top:2px;font-size:11px;color:#c00" onclick="delMedia('${m.id}')">Удалить</button></div>`).join('');
 }
@@ -173,8 +184,9 @@ async function delMedia(id){ if(!confirm('Удалить файл?')) return; aw
 async function uploadMedia(){
   const f=el('fileIn').files[0]; if(!f) return alert('Выберите файл');
   const alt=el('altIn').value;
+  const folder=el('folderIn')?el('folderIn').value.trim():'';
   const b64=await new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.readAsDataURL(f)});
-  const r=await jpost('/api/v1/media/upload',{filename:f.name, data:b64, alt});
+  const r=await jpost('/api/v1/media/upload',{filename:f.name, data:b64, alt, folder});
   if(r.ok) loadMedia(''); else alert(r.data.error);
 }
 

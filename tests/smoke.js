@@ -175,6 +175,30 @@ async function run(){
   const b64png=png.toString('base64');
   r=await req('POST','/api/v1/media/upload',JSON.stringify({filename:'dim.png',data:b64png,alt:'dims test'}));
   t('media width/height extracted',r.status===200&&r.json.width===100&&r.json.height===50,r.json.width+'x'+r.json.height);
+  // 32 MEDIA FOLDERS
+  r=await req('POST','/api/v1/media/upload',JSON.stringify({filename:'kitchen.png',data:b64png,folder:'kitchens',alt:'in folder'}));
+  const folderUrl=r.json.url;
+  t('media upload to folder',folderUrl.includes('/storage/uploads/kitchens/'),folderUrl);
+  r=await req('GET','/api/v1/media?folder=kitchens');
+  t('folder filter',r.json.every(m=>m.folder==='kitchens')&&r.json.length>=1);
+  // 33 GZIP + ETAG on static
+  await new Promise(res=>{
+    const o=URL.parse(BASE+'/'); o.headers={'Accept-Encoding':'gzip'};
+    h.get(o,rs=>{
+      const gz=rs.headers['content-encoding']==='gzip';
+      // second request with etag → 304
+      h.get({...URL.parse(BASE+'/'),headers:{'If-None-Match':rs.headers.etag}},rs2=>{
+        t('gzip compression',gz);
+        t('etag 304 cache',rs2.statusCode===304);
+        res();
+      });
+    });
+  });
+  // 34 MATERIALS & SERVICES pages
+  r=await req('GET','/materials',null,false);
+  t('/materials page',r.status===200&&r.raw.includes('Дуб европейский'));
+  r=await req('GET','/services',null,false);
+  t('/services page',r.status===200&&r.raw.includes('Проектирование'));
   console.log('\nDONE');
 }
 run().catch(e=>{console.error('SUITE ERROR',e);process.exit(1)});

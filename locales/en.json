@@ -19,5 +19,8 @@
   "spec.material": "Material",
   "spec.facade": "Facades",
   "spec.hardware": "Hardware",
-  "spec.finish": "Finish"
+  "spec.finish": "Finish",
+  "nav.services": "Services",
+  "materials.sub": "Honest materials that age beautifully",
+  "services.sub": "Full cycle: from measurement to installation and supervision"
 }

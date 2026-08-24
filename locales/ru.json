@@ -19,5 +19,8 @@
   "spec.material": "Материал",
   "spec.facade": "Фасады",
   "spec.hardware": "Фурнитура",
-  "spec.finish": "Покрытие"
+  "spec.finish": "Покрытие",
+  "nav.services": "Услуги",
+  "materials.sub": "Честные материалы, которые стареют красиво",
+  "services.sub": "Полный цикл: от замера до монтажа и авторского надзора"
 }

@@ -247,7 +247,7 @@ router.put('/api/v1/notifications/read-all', async(req,res)=>{
 router.get('/api/v1/seo/sitemap.xml', async(req,res)=>{
   const pages=db.all('pages'), projects=db.all('projects'), cats=db.all('categories'), items=db.all('catalog');
   let xml=`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
-  xml+=`<url><loc>/</loc></url>`;
+  xml+=`<url><loc>/</loc></url><url><loc>/materials</loc></url><url><loc>/services</loc></url>`;
   pages.filter(p=>p.published!==false).forEach(p=> xml+=`<url><loc>/p/${p.slug}</loc></url>`);
   projects.filter(p=>p.published!==false).forEach(p=> xml+=`<url><loc>/project/${p.slug}</loc></url>`);
   cats.forEach(c=> xml+=`<url><loc>/catalog/${c.slug}</loc></url>`);
@@ -295,20 +295,32 @@ router.post('/api/v1/backup/restore/:id', async(req,res,params)=>{
 })
 
 // MEDIA upload (base64 JSON fallback, no multipart dep)
-router.get('/api/v1/media', async(req,res)=> send(res,200,db.all('media')))
+// MEDIA list (with folder filter)
+router.get('/api/v1/media', async(req,res)=>{
+  const q=url.parse(req.url,true).query;
+  let items=db.all('media');
+  if(q.folder!==undefined) items=items.filter(m=>(m.folder||'')===q.folder);
+  send(res,200,items)
+})
 router.post('/api/v1/media/upload', async(req,res)=>{
   const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u||!auth.can(u,'editor')) return send(res,403,{error:'Forbidden'});
   const body=await parseBody(req);
-  // expects {filename, data: base64, alt}
+  // expects {filename, data: base64, alt, folder}
   if(!body.filename||!body.data) return send(res,400,{error:'filename and data required'});
   const buf=Buffer.from(body.data.split(',').pop(), 'base64');
   if(buf.length>cfg.uploadMax) return send(res,400,{error:'File too large'});
   const ext=path.extname(body.filename)||'.jpg';
   const name=Date.now().toString(36)+ext;
-  mkdirp(path.join(ROOT,'storage/uploads'));
-  fs.writeFileSync(path.join(ROOT,'storage/uploads',name),buf);
+  // folder: safe subdir inside uploads
+  let relDir='storage/uploads';
+  if(body.folder){
+    const safe=String(body.folder).replace(/[^a-zA-Z0-9_\-]/g,'-').replace(/^-+|-+$/g,'').slice(0,40);
+    if(safe){ relDir='storage/uploads/'+safe }
+  }
+  mkdirp(path.join(ROOT,relDir));
+  fs.writeFileSync(path.join(ROOT,relDir,name),buf);
   const dims=images.dimensions(buf)||{};
-  const rec=db.insert('media',{filename:name, originalName:body.filename, size:buf.length, width:dims.width, height:dims.height, alt:body.alt||'', url:`/storage/uploads/${name}`});
+  const rec=db.insert('media',{filename:name, originalName:body.filename, size:buf.length, width:dims.width, height:dims.height, folder:body.folder?String(body.folder).replace(/[^a-zA-Z0-9_\-]/g,'-').slice(0,40):'', alt:body.alt||'', url:`/${relDir}/${name}`});
   send(res,200,rec)
 })
 
@@ -375,8 +387,36 @@ router.get('/catalog/:cat', async(req,res,params)=>{
   res.writeHead(200,{...sec.headers(),'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
   res.end(siteRender.renderCategory(cat,items,langOf(req)));
 })
+router.get('/materials', async(req,res)=>{
+  res.writeHead(200,{...sec.headers(),'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
+  res.end(siteRender.renderMaterialsPage(db.all('materials'),langOf(req)));
+})
+router.get('/services', async(req,res)=>{
+  res.writeHead(200,{...sec.headers(),'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
+  res.end(siteRender.renderServicesPage(db.all('services'),langOf(req)));
+})
 
-// STATIC
+// STATIC + PERFORMANCE (gzip, ETag)
+const zlib=require('zlib');
+function acceptsGzip(req){ return (req.headers['accept-encoding']||'').includes('gzip') }
+function respondWithCache(req,res,data,type,cacheControl){
+  const etag='"'+require('crypto').createHash('md5').update(data).digest('hex').slice(0,16)+'"';
+  if(req.headers['if-none-match']===etag){
+    res.writeHead(304,{...sec.headers(),'ETag':etag,'Cache-Control':cacheControl});
+    return res.end();
+  }
+  const headers={...sec.headers(),'Content-Type':type,'Cache-Control':cacheControl,'ETag':etag,'Vary':'Accept-Encoding'};
+  if(acceptsGzip(req)&&data.length>1024&&/text|json|javascript|svg/.test(type)){
+    zlib.gzip(data,(err,gz)=>{
+      if(err) { res.writeHead(200,headers); return res.end(data) }
+      res.writeHead(200,{...headers,'Content-Encoding':'gzip','Content-Length':gz.length});
+      res.end(gz);
+    });
+  } else {
+    res.writeHead(200,{...headers,'Content-Length':data.length});
+    res.end(data);
+  }
+}
 function serveStatic(req,res){
   const parsed=url.parse(req.url);
   let p=parsed.pathname;
@@ -387,13 +427,12 @@ function serveStatic(req,res){
   if(!full.startsWith(ROOT)) return send(res,403,'Forbidden');
   if(fs.existsSync(full) && fs.statSync(full).isFile()){
     const data=fs.readFileSync(full);
-    res.writeHead(200,{...sec.headers(),'Content-Type':mime(full),'Cache-Control':p.includes('/storage/')?'public, max-age=31536000':'no-cache'});
-    return res.end(data);
+    return respondWithCache(req,res,data,mime(full),p.includes('/storage/')?'public, max-age=31536000, immutable':'public, max-age=300');
   }
   // SPA fallback for frontend pretty urls
   if(!p.startsWith('/api/') && !p.startsWith('/storage/')){
     const idx=fs.readFileSync(path.join(ROOT,'frontend/index.html'));
-    res.writeHead(200,{...sec.headers(),'Content-Type':'text/html'}); return res.end(idx);
+    return respondWithCache(req,res,idx,'text/html; charset=utf-8','public, max-age=60');
   }
   send(res,404,{error:'Not found'})
 }

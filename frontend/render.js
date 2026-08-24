@@ -4,6 +4,43 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 let LANG='ru';
 const L=k=>i18n.t(LANG,k);
 function money(v){ return 'от '+Number(v).toLocaleString(LANG==='en'?'en-US':'ru-RU')+' ₽' }
+function videoEmbed(url){
+  // YouTube/Vimeo → iframe; прямой mp4 → <video>
+  const yt=(url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{6,})/)||[])[1];
+  const vm=(url.match(/vimeo\.com\/(\d+)/)||[])[1];
+  if(yt) return `<div class="card reveal" style="aspect-ratio:16/9;margin-bottom:18px"><iframe src="https://www.youtube.com/embed/${esc(yt)}" style="width:100%;height:100%;border:0;border-radius:16px" allowfullscreen title="Видео проекта"></iframe></div>`;
+  if(vm) return `<div class="card reveal" style="aspect-ratio:16/9;margin-bottom:18px"><iframe src="https://player.vimeo.com/video/${esc(vm)}" style="width:100%;height:100%;border:0;border-radius:16px" allowfullscreen title="Видео проекта"></iframe></div>`;
+  return `<video class="card reveal" src="${esc(url)}" controls playsinline style="width:100%;border-radius:16px;margin-bottom:18px"></video>`;
+}
+function renderMaterialsPage(items,lang){
+  LANG=lang||'ru';
+  const groups={};
+  (items||[]).forEach(m=>{ const k=m.category||'other'; (groups[k]=groups[k]||[]).push(m) });
+  const names={wood:{ru:'Дерево',en:'Wood'},stone:{ru:'Камень',en:'Stone'},metal:{ru:'Металл',en:'Metal'},glass:{ru:'Стекло',en:'Glass'},facade:{ru:'Фасады',en:'Facades'},hardware:{ru:'Фурнитура',en:'Hardware'},coating:{ru:'Покрытия',en:'Finishes'},other:{ru:'Другое',en:'Other'}};
+  const body=`<section class="container section">
+    <h1 class="h2" style="font-size:48px">${L('nav.materials')}</h1>
+    <p class="sub">${L('materials.sub')}</p>
+    ${Object.keys(groups).map(k=>`
+      <h2 class="h2" style="font-size:26px;margin-top:28px">${(names[k]||names.other)[LANG]}</h2>
+      <div class="grid cols3">${groups[k].map(m=>`<article class="card reveal"><img loading="lazy" src="${esc(m.image||'/frontend/assets/img/placeholder.svg')}" alt="${esc(m.title)}"><div class="card-body"><div class="card-title">${esc(m.title)}</div><div class="muted" style="font-size:13px">${esc((m.desc||'').slice(0,120))}</div>${m.props?`<div style="margin-top:8px;font-size:12px;color:var(--muted)">${Object.entries(m.props).map(([pk,pv])=>`<div>· ${esc(pk)}: ${esc(pv)}</div>`).join('')}</div>`:''}</div></article>`).join('')}</div>`).join('')||`<div class="muted">${L('category.soon')}</div>`}
+  </section>`;
+  return shell(L('nav.materials'),L('materials.sub'),'/materials',body,LANG);
+}
+function renderServicesPage(items,lang){
+  LANG=lang||'ru';
+  const body=`<section class="container section">
+    <h1 class="h2" style="font-size:48px">${L('nav.services')}</h1>
+    <p class="sub">${L('services.sub')}</p>
+    <div class="grid cols2">${(items||[]).map(s=>`<article class="card reveal" style="padding:20px">
+      <div style="font-size:30px;color:#C9A86A">${esc(s.icon||'◧')}</div>
+      <div class="card-title" style="font-size:22px">${esc(s.title)}</div>
+      <div class="muted" style="font-size:14px;line-height:1.7">${esc(s.desc||'')}</div>
+      ${s.priceFrom?`<div style="margin-top:10px;font-weight:600">от ${Number(s.priceFrom).toLocaleString(LANG==='en'?'en-US':'ru-RU')} ₽</div>`:''}
+    </article>`).join('')||`<div class="muted">${L('category.soon')}</div>`}</div>
+    <div class="card" style="padding:24px;text-align:center;margin-top:24px"><h3 class="h2">${L('project.want_same')}</h3><a class="btn" href="/#contacts">${L('cta.discuss')}</a></div>
+  </section>`;
+  return shell(L('nav.services'),L('services.sub'),'/services',body,LANG);
+}
 function shell(title,desc,canonical,body,lang){
   lang=lang||'ru';
   const L=k=>i18n.t(lang,k);
@@ -13,7 +50,7 @@ function shell(title,desc,canonical,body,lang){
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/frontend/assets/css/premium.css"></head>
 <body>
-<header class="nav"><div class="container nav-inner"><a class="logo" href="/">MEB</a><nav class="nav-links"><a href="/#catalog">${L('nav.catalog')}</a><a href="/#projects">${L('nav.projects')}</a><a href="/#materials">${L('nav.materials')}</a><a href="/#contacts">${L('nav.contacts')}</a></nav><a class="btn" href="/#contacts">${L('cta.discuss')}</a></div></header>
+<header class="nav"><div class="container nav-inner"><a class="logo" href="/">MEB</a><nav class="nav-links"><a href="/catalog/kuhni">${L('nav.catalog')}</a><a href="/#projects">${L('nav.projects')}</a><a href="/materials">${L('nav.materials')}</a><a href="/services">${L('nav.services')}</a><a href="/#contacts">${L('nav.contacts')}</a></nav><a class="btn" href="/#contacts">${L('cta.discuss')}</a></div></header>
 <main>${body}</main>
 <footer class="footer"><div class="container" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><span>© 2026 MEB — ${L('footer.copyright')}</span><span><a href="/">${L('footer.home')}</a> · <a href="/#projects">${L('nav.projects')}</a></span></div></footer>
 <script src="/frontend/assets/js/app.js"></script></body></html>`;
@@ -33,6 +70,7 @@ function renderProject(p,lang){
     <div class="hero-card reveal"><img src="${esc(imgs[0])}" alt="${esc(p.title)}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></div>
   </section>
   <section class="container section"><h2 class="h2 reveal">${L('project.gallery')}</h2>
+    ${p.video?videoEmbed(p.video):''}
     <div class="masonry">${imgs.map(u=>`<article class="card reveal"><img loading="lazy" src="${esc(u)}" alt="${esc(p.title)} — фото"></article>`).join('')}
     </div></section>
   <section id="contacts" class="container section"><div class="card" style="padding:28px;text-align:center">
@@ -75,4 +113,4 @@ function specsHTML(item){
   return `<div class="grid cols2"><div class="card" style="padding:18px"><h3 class="h2" style="font-size:24px">${L('item.specs')}</h3>
   <table style="width:100%;border-collapse:collapse;font-size:14px">${rows.map(r=>`<tr><td style="padding:8px 0;color:#777;width:40%">${r[0]}</td><td>${esc(r[1])}</td></tr>`).join('')}</table></div></div>`;
 }
-module.exports={renderProject,renderCategory,renderItem};
+module.exports={renderProject,renderCategory,renderItem,renderMaterialsPage,renderServicesPage};
