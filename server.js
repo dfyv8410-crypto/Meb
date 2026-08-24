@@ -250,6 +250,16 @@ router.post('/api/v1/install/run', async(req,res)=>{
   send(res,200,{ok:true})
 })
 
+// CMS PAGE RENDERING (/p/:slug)
+const pageRender=require('./modules/pages/render');
+router.get('/p/:slug', async(req,res,params)=>{
+  const page=db.all('pages').find(x=>x.slug===params.slug && x.published!==false);
+  if(!page) return send(res,404,'<!doctype html><html><body style="font-family:sans-serif;padding:60px;text-align:center"><h1>404</h1><a href="/">На главную</a></body></html>',{'Content-Type':'text/html; charset=utf-8'});
+  const html=pageRender.renderPage(page);
+  res.writeHead(200,{...sec.headers(),'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
+  res.end(html);
+})
+
 // STATIC
 function serveStatic(req,res){
   const parsed=url.parse(req.url);
