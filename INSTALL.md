@@ -8,16 +8,18 @@
 ```bash
 git clone https://github.com/dfyv8410-crypto/Meb.git
 cd Meb
-node server.js
+node scripts/seed.js --demo        # админ + демо-контент
+node server.js                     # → http://localhost:3000
 ```
 
-Откройте `http://localhost:3000/install`:
+Опции seed (все необязательны):
+```
+--email=you@site.ru --password=Secret123 --name=Имя --siteName=MEB --phone=+7...
+```
+Без `--demo` будет создан только админ и настройки.
 
-1. **Проверка** — система проверит окружение; выберите демо-контент или пустую установку
-2. **Админ** — email + пароль супер-админа
-3. **Сайт** — название, телефон → «Установить»
+Веб-инсталлер удалён (v1.8): первичное наполнение — только через CLI, чтобы на сервере не было открытого установщика. Чтобы начать с нуля — очистите `storage/data/*.json` и запустите seed снова.
 
-После установки installer блокируется (`storage/installed.lock`).
 
 ## Доступы после демо-установки
 - Админка: `/admin` → admin@meb.local / Admin123!

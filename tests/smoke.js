@@ -23,15 +23,10 @@ async function run(){
   try{fs.unlinkSync('storage/installed.lock')}catch(e){}
   fs.readdirSync('storage/data').forEach(f=>{ if(f.endsWith('.json')) try{fs.unlinkSync('storage/data/'+f)}catch(e){} });
   const t=(n,ok,extra='')=>console.log((ok?'PASS':'FAIL')+' | '+n+(extra?' | '+extra:''));
-  // 1 install check
+  // 1 SEED via CLI (installer removed in 1.8)
+  require('child_process').execSync('node scripts/seed.js --demo',{stdio:'inherit'});
   let r=await req('GET','/api/v1/install/check',null,false);
-  t('install/check',r.status===200&&r.json.installed===false);
-  // 2 install run with demo
-  r=await req('POST','/api/v1/install/run',JSON.stringify({email:'admin@meb.local',password:'Admin123!',name:'Admin',siteName:'MEB',phone:'+7 900 000 00 00',demo:true}),false);
-  t('install/run + demo',r.status===200,r.status+':'+(r.raw||'').slice(0,80));
-  // 3 installer locked
-  r=await req('POST','/api/v1/install/run',JSON.stringify({email:'x@x.x',password:'x'}),false);
-  t('installer blocked after install',r.status===400);
+  t('installer API removed →404',r.status===404);
   // 4 demo data seeded
   r=await req('GET','/api/v1/projects?published=true',null,false);
   const demoProjects=r.json||[];
@@ -104,7 +99,7 @@ async function run(){
   r=await req('GET','/admin',null,false);
   t('admin panel html',r.status===200&&r.raw.includes('MEB Admin'));
   r=await req('GET','/install',null,false);
-  t('installer html',r.status===200&&r.raw.includes('Installer'));
+  t('/install no longer serves installer',r.status===200&&!r.raw.includes('Installer'));
   // 22 security headers
   const h=require('http');
   await new Promise(res=>{
