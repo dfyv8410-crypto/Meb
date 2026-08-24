@@ -8,6 +8,8 @@ const audit=require('./core/audit');
 
 const cfg=load();
 const router=new Router();
+const migrations=require('./core/migrations');
+const ALL_COLS=['pages','catalog','projects','materials','services','reviews','leads','users','categories','settings'];
 
 function send(res,code,data,headers={}){
   const h={...sec.headers(),...headers};
@@ -31,7 +33,70 @@ function mime(p){
 }
 
 // HEALTH
-router.get('/api/v1/health', (req,res)=> send(res,200,{status:'ok', version:'1.0.0', time:new Date().toISOString()}))
+router.get('/api/v1/health', (req,res)=> send(res,200,{status:'ok', version:migrations.current(), node:process.version, time:new Date().toISOString()}))
+
+// AUDIT LOG (admin read-only)
+router.get('/api/v1/audit_log', async(req,res)=>{
+  const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u||!auth.can(u,'admin')) return send(res,403,{error:'Forbidden'});
+  send(res,200,db.all('audit_log').slice(-100))
+})
+
+// MEDIA delete
+router.del('/api/v1/media/:id', async(req,res,params)=>{
+  const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u||!auth.can(u,'editor')) return send(res,403,{error:'Forbidden'});
+  const m=db.byId('media',params.id);
+  if(m){ try{ fs.unlinkSync(path.join(ROOT,'storage/uploads',m.filename)) }catch(e){} }
+  db.remove('media',params.id);
+  audit.log({userId:u.id,action:'delete',entity:'media',entityId:params.id,ip:req.socket.remoteAddress});
+  send(res,200,{ok:true})
+})
+
+// SEO AUDIT
+const seoAudit=require('./modules/seo/audit');
+router.get('/api/v1/seo/audit', async(req,res)=>{
+  const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u) return send(res,401,{error:'Unauthorized'});
+  send(res,200,seoAudit.audit())
+})
+
+// SYSTEM UPDATE
+router.get('/api/v1/system/update/check', async(req,res)=>{
+  const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u||!auth.can(u,'super_admin')) return send(res,403,{error:'Forbidden'});
+  migrations.fetchLatest(latest=>{
+    const current=migrations.current();
+    send(res,200,{current, latest:latest||current, updateAvailable:!!(latest&&migrations.cmp(latest,current)>0)})
+  });
+})
+router.post('/api/v1/system/update/run', async(req,res)=>{
+  const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u||!auth.can(u,'super_admin')) return send(res,403,{error:'Forbidden'});
+  // 1. auto backup before update
+  const snapshot={}; ALL_COLS.forEach(c=> snapshot[c]=db.all(c));
+  const stamp=Date.now();
+  mkdirp(path.join(ROOT,'storage/backups'));
+  fs.writeFileSync(path.join(ROOT,`storage/backups/pre-update-${stamp}.json`),JSON.stringify(snapshot,null,2));
+  // 2. git pull (code updates deploy via git)
+  let pullErr=null;
+  try{
+    require('child_process').execSync('git pull origin master',{cwd:ROOT,timeout:60000,stdio:'pipe'}).toString();
+  }catch(e){ pullErr=e.message.slice(0,200) }
+  // 3. migrations + health check; rollback data on failure
+  try{
+    const applied=migrations.runMigrations();
+    const healthOK=fs.existsSync(ROOT)&&db.all('users').length>0;
+    if(!healthOK) throw new Error('health check failed');
+    audit.log({userId:u.id,action:'update',entity:'system',meta:{applied},ip:req.socket.remoteAddress});
+    send(res,200,{ok:true, version:migrations.current(), applied})
+  }catch(e){
+    // rollback: restore pre-update snapshot
+    Object.keys(snapshot).forEach(k=> db.setAll(k,snapshot[k]));
+    audit.log({userId:u.id,action:'update-rollback',entity:'system',ip:req.socket.remoteAddress});
+    send(res,500,{ok:false,error:(pullErr||e.message),restoredFrom:`pre-update-${stamp}`})
+  }
+})
+
+// ROBOTS.TXT
+router.get('/robots.txt', async(req,res)=>{
+  send(res,200,`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /install\nSitemap: /api/v1/seo/sitemap.xml\n`,{'Content-Type':'text/plain'})
+})
 
 // AUTH
 router.post('/api/v1/auth/login', async(req,res)=>{
@@ -188,7 +253,7 @@ router.get('/api/v1/backup/list', async(req,res)=>{
 router.post('/api/v1/backup/create', async(req,res)=>{
   const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u||!auth.can(u,'admin')) return send(res,403,{error:'Forbidden'});
   const id=Date.now().toString();
-  const snapshot={}; ['pages','catalog','projects','materials','services','reviews','leads','users','categories','settings'].forEach(c=> snapshot[c]=db.all(c));
+  const snapshot={}; ALL_COLS.forEach(c=> snapshot[c]=db.all(c));
   const file=path.join(ROOT,`storage/backups/backup-${id}.json`);
   mkdirp(path.join(ROOT,'storage/backups'));
   fs.writeFileSync(file,JSON.stringify(snapshot,null,2));
@@ -200,7 +265,7 @@ router.post('/api/v1/backup/restore/:id', async(req,res,params)=>{
   const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u||!auth.can(u,'super_admin')) return send(res,403,{error:'Forbidden'});
   const b=db.byId('backups',params.id); if(!b) return send(res,404,{error:'Not found'});
   // pre-restore backup
-  const snap={}; ['pages','catalog','projects','materials','services','reviews','leads','users','categories','settings'].forEach(c=> snap[c]=db.all(c));
+  const snap={}; ALL_COLS.forEach(c=> snap[c]=db.all(c));
   fs.writeFileSync(path.join(ROOT,`storage/backups/pre-restore-${Date.now()}.json`),JSON.stringify(snap,null,2));
   const data=JSON.parse(fs.readFileSync(path.join(ROOT,`storage/backups/${b.filename}`),'utf8'));
   Object.keys(data).forEach(k=> db.setAll(k,data[k]));

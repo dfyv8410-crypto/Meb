@@ -134,6 +134,31 @@ async function run(){
   const me=await req('GET','/api/v1/me');
   r=await req('DELETE','/api/v1/users/'+me.json.id);
   t('cannot delete last admin/self',r.status===400);
+  // 26 PAGE BUILDER end-to-end
+  const blocks=[
+    {type:'hero',data:{title:'QA Hero'}},
+    {type:'features',data:{items:[{title:'F1',desc:'d',kicker:'01'}]}},
+    {type:'faq',data:{items:[{q:'Q?',a:'A'}]}},
+    {type:'contact',data:{}}
+  ];
+  r=await req('POST','/api/v1/pages',JSON.stringify({title:'QA Builder',slug:'qa-builder',blocks,published:true}));
+  const pageId=r.json.id;
+  t('builder: create page with blocks',r.status===200&&pageId);
+  r=await req('GET','/p/qa-builder',null,false);
+  t('builder: all blocks render',r.raw.includes('QA Hero')&&r.raw.includes('F1')&&r.raw.includes('Q?')&&r.raw.includes('submitLead'));
+  blocks[0].hidden=true;
+  await req('PUT','/api/v1/pages/'+pageId,JSON.stringify({blocks}));
+  r=await req('GET','/p/qa-builder',null,false);
+  t('builder: hidden block not rendered',!r.raw.includes('QA Hero'));
+  // 27 SEO audit endpoint
+  r=await req('GET','/api/v1/seo/audit');
+  const sa=r.json||{};
+  t('seo audit score+issues shape',typeof sa.score==='number'&&Array.isArray(sa.issues));
+  // 28 robots.txt + sitemap registered pages
+  r=await req('GET','/robots.txt',null,false);
+  t('robots.txt served',r.raw.includes('Disallow: /admin'));
+  // cleanup builder page
+  await req('DELETE','/api/v1/pages/'+pageId);
   console.log('\nDONE');
 }
 run().catch(e=>{console.error('SUITE ERROR',e);process.exit(1)});
