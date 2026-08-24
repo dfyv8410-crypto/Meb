@@ -217,11 +217,46 @@ fun LeadsScreen(onBack: () -> Unit) {
         }
         LazyColumn(Modifier.padding(top = 4.dp)) {
             items(leads) { l ->
+                val statuses = listOf("new", "in_progress", "contacted", "done", "rejected")
                 Card(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
                     Column(Modifier.padding(12.dp)) {
                         Text(l.optString("name"), style = MaterialTheme.typography.titleMedium)
                         Text(l.optString("phone"))
-                        Text("Статус: ${l.optString("status")}", style = MaterialTheme.typography.bodySmall)
+                        Row(verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()) {
+                            Text("Статус:", style = MaterialTheme.typography.bodySmall)
+                            var expanded by remember { mutableStateOf(false) }
+                            Box {
+                                TextButton(onClick = { if (!offline) expanded = true },
+                                    enabled = !offline) {
+                                    Text(l.optString("status"),
+                                        color = when (l.optString("status")) {
+                                            "new" -> Color(0xFFC9A86A)
+                                            "done" -> Color(0xFF6BBF8A)
+                                            "rejected" -> Color(0xFFB06060)
+                                            else -> MaterialTheme.colorScheme.onSurface
+                                        })
+                                }
+                                DropdownMenu(expanded = expanded,
+                                    onDismissRequest = { expanded = false }) {
+                                    statuses.forEach { s ->
+                                        DropdownMenuItem(text = { Text(s) }, onClick = {
+                                            expanded = false
+                                            ApiClient.updateLead(l.optString("id"), s)
+                                                .onSuccess {
+                                                    leads = leads.map {
+                                                        if (it.optString("id") == l.optString("id"))
+                                                            it.put("status", s) else it
+                                                    }
+                                                    PinManager.cacheLeads(ctx,
+                                                        JSONArray(leads.map { it.toString() }).toString())
+                                                }
+                                        })
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

@@ -12,6 +12,67 @@ function videoEmbed(url){
   if(vm) return `<div class="card reveal" style="aspect-ratio:16/9;margin-bottom:18px"><iframe src="https://player.vimeo.com/video/${esc(vm)}" style="width:100%;height:100%;border:0;border-radius:16px" allowfullscreen title="Видео проекта"></iframe></div>`;
   return `<video class="card reveal" src="${esc(url)}" controls playsinline style="width:100%;border-radius:16px;margin-bottom:18px"></video>`;
 }
+function renderProjectsPage(items,lang){
+  LANG=lang||'ru';
+  const body=`<section class="container section">
+    <div class="badge">${L('nav.projects')} · ${(items||[]).length}</div>
+    <h1 class="h2" style="font-size:48px">${LANG==='en'?'Portfolio':'Портфолио'}</h1>
+    <p class="sub">${LANG==='en'?'Every project is made for a specific interior.':'Каждый проект — под конкретный интерьер. Без типовых решений.'}</p>
+    <div class="masonry">${(items||[]).map(p=>{
+      const img=(p.images&&p.images[0])||'/frontend/assets/img/placeholder.svg';
+      return `<a href="/project/${esc(p.slug)}"><article class="card reveal"><img loading="lazy" src="${esc(img)}" alt="${esc(p.title)}">
+      <div class="card-body"><div class="eyebrow">${esc(p.category||'')} ${p.year?'· '+esc(p.year):''}</div><div class="card-title">${esc(p.title)}</div>
+      <div class="muted" style="font-size:13px">${esc((p.desc||'').slice(0,100))}</div></div></article></a>`
+    }).join('')||`<div class="muted">${L('category.soon')}</div>`}</div></section>`;
+  return shell(L('nav.projects'),L('nav.projects'),'/projects',body,LANG);
+}
+function renderCatalogHub(cats,counts,lang){
+  LANG=lang||'ru';
+  const body=`<section class="container section">
+    <h1 class="h2" style="font-size:48px">${L('nav.catalog')}</h1>
+    <p class="sub">${LANG==='en'?'Kitchens, wardrobes, living rooms and more — all bespoke.':'Кухни, гардеробные, гостиные, спальни и решения для бизнеса — всё на заказ.'}</p>
+    <div class="grid cols3">${(cats||[]).map(c=>`
+      <a href="/catalog/${esc(c.slug)}"><article class="card reveal">
+        <img loading="lazy" src="${esc(c.cover||'/frontend/assets/img/placeholder.svg')}" alt="${esc(c.title)}">
+        <div class="card-body"><div class="eyebrow">${counts[c.id]||0} ${L('category.positions')}</div>
+        <div class="card-title" style="font-size:20px">${esc(c.title)}</div>
+        <div class="muted" style="font-size:13px">${esc((c.desc||'').slice(0,90))}</div></div>
+      </article></a>`).join('')||`<div class="muted">${L('category.soon')}</div>`}</div></section>`;
+  return shell(L('nav.catalog'),L('nav.catalog'),'/catalog',body,LANG);
+}
+function renderContactsPage(s,lang){
+  LANG=lang||'ru';
+  const phone=(s.phone||'').replace(/[^\d+]/g,'');
+  const wa=phone.replace('+','');
+  const body=`<section class="container section">
+    <h1 class="h2" style="font-size:48px">${L('nav.contacts')}</h1>
+    <p class="sub">${LANG==='en'?'We reply within an hour during business hours.':'Отвечаем в течение часа в рабочее время.'}</p>
+    <div class="grid cols2">
+      <div>
+        <form class="form card" style="padding:18px" onsubmit="submitLead(event)">
+          <input class="input" name="name" placeholder="${LANG==='en'?'Name':'Имя'}" required>
+          <input class="input" name="phone" placeholder="${LANG==='en'?'Phone':'Телефон'}" required>
+          <input class="input" name="email" placeholder="Email">
+          <textarea class="input" name="message" placeholder="${LANG==='en'?'Tell us about your project':'Расскажите о проекте'}" rows="4"></textarea>
+          <button class="btn" type="submit">${L('cta.discuss')}</button><div id="leadMsg" class="muted"></div>
+        </form>
+      </div>
+      <div>
+        <div class="card" style="padding:18px;line-height:2">
+          <div class="eyebrow">MEB Studio</div>
+          ${s.phone?`<div>☎ <a href="tel:${esc(phone)}">${esc(s.phone)}</a></div>`:''}
+          ${s.email?`<div>✉ <a href="mailto:${esc(s.email)}">${esc(s.email)}</a></div>`:''}
+          ${s.address?`<div>📍 ${esc(s.address)}</div>`:''}
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+            ${phone?`<a class="btn btn-ghost" style="padding:9px 16px;font-size:11px" target="_blank" rel="noopener" href="https://wa.me/${esc(wa)}">WhatsApp</a>
+            <a class="btn btn-ghost" style="padding:9px 16px;font-size:11px" target="_blank" rel="noopener" href="https://t.me/+${esc(wa)}">Telegram</a>`:''}
+          </div>
+        </div>
+        ${s.mapEmbed?`<div class="card reveal" style="overflow:hidden;height:280px">${s.mapEmbed}</div>`:''}
+      </div>
+    </div></section>`;
+  return shell(L('nav.contacts'),L('nav.contacts'),'/contacts',body,LANG);
+}
 function renderMaterialsPage(items,lang){
   LANG=lang||'ru';
   const groups={};
@@ -50,7 +111,7 @@ function shell(title,desc,canonical,body,lang){
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/frontend/assets/css/premium.css"></head>
 <body>
-<header class="nav"><div class="container nav-inner"><a class="logo" href="/">MEB</a><nav class="nav-links"><a href="/catalog/kuhni">${L('nav.catalog')}</a><a href="/#projects">${L('nav.projects')}</a><a href="/materials">${L('nav.materials')}</a><a href="/services">${L('nav.services')}</a><a href="/#contacts">${L('nav.contacts')}</a></nav><a class="btn" href="/#contacts">${L('cta.discuss')}</a></div></header>
+<header class="nav"><div class="container nav-inner"><a class="logo" href="/">MEB</a><nav class="nav-links"><a href="/catalog">${L('nav.catalog')}</a><a href="/projects">${L('nav.projects')}</a><a href="/materials">${L('nav.materials')}</a><a href="/services">${L('nav.services')}</a><a href="/contacts">${L('nav.contacts')}</a></nav><a class="btn" href="/contacts">${L('cta.discuss')}</a></div></header>
 <main>${body}</main>
 <footer class="footer"><div class="container" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><span>© 2026 MEB — ${L('footer.copyright')}</span><span><a href="/">${L('footer.home')}</a> · <a href="/#projects">${L('nav.projects')}</a></span></div></footer>
 <script src="/frontend/assets/js/app.js"></script></body></html>`;
@@ -113,4 +174,4 @@ function specsHTML(item){
   return `<div class="grid cols2"><div class="card" style="padding:18px"><h3 class="h2" style="font-size:24px">${L('item.specs')}</h3>
   <table style="width:100%;border-collapse:collapse;font-size:14px">${rows.map(r=>`<tr><td style="padding:8px 0;color:#777;width:40%">${r[0]}</td><td>${esc(r[1])}</td></tr>`).join('')}</table></div></div>`;
 }
-module.exports={renderProject,renderCategory,renderItem,renderMaterialsPage,renderServicesPage};
+module.exports={renderProject,renderCategory,renderItem,renderMaterialsPage,renderServicesPage,renderProjectsPage,renderCatalogHub,renderContactsPage};

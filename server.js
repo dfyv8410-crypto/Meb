@@ -247,7 +247,7 @@ router.put('/api/v1/notifications/read-all', async(req,res)=>{
 router.get('/api/v1/seo/sitemap.xml', async(req,res)=>{
   const pages=db.all('pages'), projects=db.all('projects'), cats=db.all('categories'), items=db.all('catalog');
   let xml=`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
-  xml+=`<url><loc>/</loc></url><url><loc>/materials</loc></url><url><loc>/services</loc></url>`;
+  xml+=`<url><loc>/</loc></url><url><loc>/projects</loc></url><url><loc>/catalog</loc></url><url><loc>/materials</loc></url><url><loc>/services</loc></url><url><loc>/contacts</loc></url>`;
   pages.filter(p=>p.published!==false).forEach(p=> xml+=`<url><loc>/p/${p.slug}</loc></url>`);
   projects.filter(p=>p.published!==false).forEach(p=> xml+=`<url><loc>/project/${p.slug}</loc></url>`);
   cats.forEach(c=> xml+=`<url><loc>/catalog/${c.slug}</loc></url>`);
@@ -394,6 +394,23 @@ router.get('/materials', async(req,res)=>{
 router.get('/services', async(req,res)=>{
   res.writeHead(200,{...sec.headers(),'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
   res.end(siteRender.renderServicesPage(db.all('services'),langOf(req)));
+})
+router.get('/projects', async(req,res)=>{
+  const items=db.all('projects').filter(p=>p.published!==false);
+  res.writeHead(200,{...sec.headers(),'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
+  res.end(siteRender.renderProjectsPage(items,langOf(req)));
+})
+router.get('/catalog', async(req,res)=>{
+  const cats=db.all('categories');
+  const counts={};
+  db.all('catalog').forEach(i=>{ counts[i.categoryId]=(counts[i.categoryId]||0)+1 });
+  res.writeHead(200,{...sec.headers(),'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
+  res.end(siteRender.renderCatalogHub(cats,counts,langOf(req)));
+})
+router.get('/contacts', async(req,res)=>{
+  const s=db.all('settings')[0]||{};
+  res.writeHead(200,{...sec.headers(),'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-cache'});
+  res.end(siteRender.renderContactsPage(s,langOf(req)));
 })
 
 // STATIC + PERFORMANCE (gzip, ETag)

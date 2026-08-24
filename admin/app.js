@@ -193,15 +193,26 @@ async function uploadMedia(){
 /* ============ GENERIC CRUD ============ */
 async function renderCrud(id,list){
   const items=await jget('/api/v1/'+id)||[];
-  const isLeads=id==='leads';
-  list.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><b>${id}</b><button class="btn" onclick="showForm('${id}')">+ Добавить</button></div>
-    ${isLeads?'<div style="font-size:12px;color:#888">Статусы: new → in_progress → contacted → done / rejected</div>':''}
+  const isLeads=id==='leads', isReviews=id==='reviews';
+  list.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><b>${id}</b>${isLeads?'':`<button class="btn" onclick="showForm('${id}')">+ Добавить</button>`}</div>
+    ${isLeads?'<div style="font-size:12px;color:var(--muted)">Меняйте статус прямо в списке: new → in_progress → contacted → done / rejected</div>':''}
     <table style="margin-top:10px"><thead><tr><th>Название</th><th>Slug/Email</th><th>Статус</th><th></th></tr></thead><tbody>${items.map(it=>{
       const title=it.title||it.name||it.email||it.id;
       const slug=it.slug||it.email||'';
-      const status=it.status?`<span class="badge">${esc(it.status)}</span>`:(it.published===false?'<span class="badge" style="background:#999">черновик</span>':'—');
+      let status;
+      if(isLeads) status=`<select class="input" style="padding:4px 8px;font-size:12px" onchange="setLeadStatus('${it.id}',this.value)">${['new','in_progress','contacted','done','rejected'].map(s=>`<option ${it.status===s?'selected':''}>${s}</option>`).join('')}</select>`;
+      else if(isReviews) status=`<button onclick="toggleReview('${it.id}',${it.approved===false})" title="${it.approved===false?'Опубликовать на сайте':'Скрыть с сайта'}">${it.approved===false?'🚫 скрыт':'✓ опубликован'}</button>`;
+      else status=it.status?`<span class="badge">${esc(it.status)}</span>`:(it.published===false?'<span class="badge" style="background:#999">черновик</span>':'—');
       return `<tr><td>${esc(title)}</td><td>${esc(slug)}</td><td>${status}</td><td><button onclick="editItem('${id}','${it.id}')">Изм.</button> <button onclick="delItem('${id}','${it.id}')">Удл.</button></td></tr>`
     }).join('')}</tbody></table></div>`;
+}
+async function setLeadStatus(id,status){
+  const r=await jput('/api/v1/leads/'+id,{status});
+  if(!r.ok) alert(r.data.error||'Ошибка');
+}
+async function toggleReview(id,approve){
+  const r=await jput('/api/v1/reviews/'+id,{approved:approve});
+  if(r.ok) nav('reviews'); else alert((r.data||{}).error||'Ошибка');
 }
 function showForm(col, data={}){
   const box=el('formBox'); box.style.display='';

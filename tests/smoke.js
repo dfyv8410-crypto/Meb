@@ -199,6 +199,33 @@ async function run(){
   t('/materials page',r.status===200&&r.raw.includes('Дуб европейский'));
   r=await req('GET','/services',null,false);
   t('/services page',r.status===200&&r.raw.includes('Проектирование'));
+
+  // 35 PUBLIC HUB PAGES: /projects /catalog /contacts
+  r=await req('GET','/projects',null,false);
+  t('/projects page',r.status===200&&r.raw.includes('/project/'));
+  r=await req('GET','/catalog',null,false);
+  t('/catalog hub',r.status===200&&r.raw.includes('/catalog/'));
+  r=await req('GET','/contacts',null,false);
+  t('/contacts page + form',r.status===200&&r.raw.includes('submitLead'));
+  const st=(await req('GET','/api/v1/settings')).json;
+  t('/contacts shows phone',st.phone?r.raw.includes(st.phone.replace(/[^\d+]/g,''))||r.raw.includes(st.phone):true);
+
+  // 36 REVIEWS moderation via admin API
+  r=await req('POST','/api/v1/reviews',JSON.stringify({name:'QA Rev',text:'Отличная кухня!',rating:5,approved:false}));
+  const rev=r.json;
+  await req('PUT','/api/v1/reviews/'+rev.id,JSON.stringify({approved:true}));
+  const revList=(await req('GET','/api/v1/reviews')).json;
+  t('review approve toggle',Array.isArray(revList)&&revList.find(x=>x.id===rev.id&&x.approved===true)!==undefined);
+  await req('DELETE','/api/v1/reviews/'+rev.id);
+
+  // 37 LEAD quick status update
+  r=await req('POST','/api/v1/leads-public',JSON.stringify({name:'Статус Тест',phone:'+79005550011'}),false);
+  const ld2=r.json;
+  r=await req('PUT','/api/v1/leads/'+ld2.id,JSON.stringify({status:'contacted'}));
+  const leadList=(await req('GET','/api/v1/leads')).json;
+  t('lead status change from list',r.status===200&&leadList.find(x=>x.id===ld2.id&&x.status==='contacted')!==undefined);
+  await req('DELETE','/api/v1/leads/'+ld2.id);
+
   console.log('\nDONE');
 }
 run().catch(e=>{console.error('SUITE ERROR',e);process.exit(1)});
