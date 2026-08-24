@@ -1,24 +1,32 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MEB Admin</title><style>
-:root{--ink:#0E0F0F;--line:#E8E6E0;--bg:#F6F5F1;--brass:#C9A86A}*{box-sizing:border-box}body{margin:0;font-family:Manrope,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
-.nav{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0}
+:root{--ink:#0E0F0F;--line:#E8E6E0;--bg:#F6F5F1;--brass:#C9A86A;--card:#fff;--muted:#666}
+body.dark{--ink:#F2F0EB;--line:#2A2A28;--bg:#121211;--card:#1B1B19;--muted:#999}
+*{box-sizing:border-box}body{margin:0;font-family:Manrope,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+.nav{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid var(--line);background:var(--card);position:sticky;top:0;z-index:10}
 .menu{display:flex;gap:8px;flex-wrap:wrap;padding:12px 18px}
-.menu a{padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:13px}
-.menu a.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.menu a{padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:13px;color:var(--ink);text-decoration:none}
+.menu a.active{background:#0E0F0F;color:#fff;border-color:#0E0F0F}
 .wrap{max-width:1100px;margin:0 auto;padding:18px}
-.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff}
-.btn{padding:10px 14px;border-radius:999px;border:1px solid var(--ink);background:var(--ink);color:#fff;cursor:pointer}
-.btn-ghost{background:#fff;color:var(--ink)}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left}
+.input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--card);color:var(--ink)}
+.btn{padding:10px 14px;border-radius:999px;border:1px solid #0E0F0F;background:#0E0F0F;color:#fff;cursor:pointer}
+body.dark .btn{border-color:#F2F0EB;background:#F2F0EB;color:#121211}
+.btn-ghost{background:transparent!important;color:var(--ink)!important;border:1px solid var(--line)!important}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left}
 .badge{padding:4px 8px;border-radius:999px;background:#0E0F0F;color:#fff;font-size:11px}
-label{font-size:12px;color:#555}
+body.dark .badge{background:#F2F0EB;color:#121211}
+label{font-size:12px;color:var(--muted)}
+.bell{position:relative;background:none;border:none;font-size:20px;cursor:pointer;margin-right:6px}
+.bell .cnt{position:absolute;top:-4px;right:-8px;background:#c00;color:#fff;border-radius:999px;font-size:10px;padding:1px 5px;display:none}
 .block-row:hover{border-color:#C9A86A}
-.drag-handle{color:#999;user-select:none;font-size:16px}
+.drag-handle{color:var(--muted);user-select:none;font-size:16px}
 @media(max-width:700px){.grid2{grid-template-columns:1fr}}
 </style></head><body>
-<div class="nav"><b>MEB Admin</b><div><span id="who" style="font-size:13px;color:#666"></span> <button class="btn btn-ghost" onclick="logout()">Выйти</button></div></div>
-<div id="login" class="wrap" style="max-width:420px"><div class="card"><h3>Вход</h3><input id="email" class="input" placeholder="email" value="admin@meb.local"><input id="pwd" class="input" placeholder="пароль" type="password" value="Admin123!"><button class="btn" onclick="doLogin()" style="margin-top:10px;width:100%">Войти</button><div id="loginMsg" style="color:#c00;margin-top:8px"></div><div style="font-size:12px;color:#888;margin-top:8px">После установки используйте созданный email/пароль. Если demo — admin@meb.local / Admin123!</div></div></div>
+<div class="nav"><b>MEB Admin</b><div style="display:flex;align-items:center;gap:8px"><span id="who" style="font-size:13px;color:var(--muted)"></span><button class="bell" id="bell" onclick="openNotifications()" title="Уведомления">🔔<span class="cnt" id="bellCnt"></span></button><button class="btn btn-ghost" onclick="toggleDark()" title="Тема">🌓</button> <button class="btn btn-ghost" onclick="logout()">Выйти</button></div></div>
+<div id="login" class="wrap" style="max-width:420px"><div class="card"><h3>Вход</h3><input id="email" class="input" placeholder="email" value="admin@meb.local"><input id="pwd" class="input" placeholder="пароль" type="password" value=""><button class="btn" onclick="doLogin()" style="margin-top:10px;width:100%">Войти</button><div id="loginMsg" style="color:#c00;margin-top:8px"></div><div style="font-size:12px;color:var(--muted);margin-top:8px">Учётные данные задаётся при установке (/install). При демо-установке: admin@meb.local / Admin123!</div></div></div>
+<div id="notifBox" class="wrap card" style="display:none;max-width:520px;margin-left:auto;position:absolute;right:12px;top:60px;z-index:99"><b>Уведомления</b> <button class="btn btn-ghost" style="float:right" onclick="markRead()">Прочитать все</button><div id="notifList" style="margin-top:10px"></div></div>
 <div id="app" style="display:none">
 <div class="menu" id="menu"></div>
 <div class="wrap">

@@ -25,8 +25,8 @@ function renderMenu(){
 }
 async function checkMe(){
   const r=await fetch('/api/v1/me',{headers:hdr()});
-  if(r.ok){ const u=await r.json(); document.getElementById('who').textContent=u.name+' · '+u.role; document.getElementById('login').style.display='none'; document.getElementById('app').style.display=''; renderMenu(); nav(cur); }
-  else { document.getElementById('login').style.display=''; document.getElementById('app').style.display='none';}
+  if(r.ok){ const u=await r.json(); el('who').textContent=u.name+' · '+u.role; el('login').style.display='none'; el('app').style.display=''; renderMenu(); nav(cur); refreshBell(); setInterval(refreshBell,30000); }
+  else { el('login').style.display=''; el('app').style.display='none';}
 }
 async function doLogin(){
   const email=document.getElementById('email').value, password=document.getElementById('pwd').value;
@@ -37,6 +37,29 @@ async function doLogin(){
 function logout(){ localStorage.removeItem('token'); token=''; checkMe();}
 const el=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ============ DARK MODE + NOTIFICATIONS ============ */
+function toggleDark(){
+  document.body.classList.toggle('dark');
+  localStorage.setItem('meb_dark',document.body.classList.contains('dark')?'1':'0');
+}
+if(localStorage.getItem('meb_dark')==='1') document.addEventListener('DOMContentLoaded',()=>document.body.classList.add('dark'));
+async function refreshBell(){
+  try{
+    const notes=await jget('/api/v1/notifications')||[];
+    const unread=notes.filter(n=>!n.read).length;
+    const c=el('bellCnt'); if(c){ c.textContent=unread; c.style.display=unread?'block':'none' }
+  }catch(e){}
+}
+async function openNotifications(){
+  const box=el('notifBox');
+  if(box.style.display==='none'){
+    box.style.display='';
+    const notes=await jget('/api/v1/notifications')||[];
+    el('notifList').innerHTML=notes.slice(0,10).map(n=>`<div class="card" style="padding:8px;margin-top:6px;${n.read?'':'border-color:#C9A86A'}"><b style="font-size:13px">${esc(n.title)}</b><div style="font-size:12px;color:var(--muted)">${esc(n.body)}</div><div style="font-size:11px;color:var(--muted)">${esc((n.createdAt||'').slice(0,19))}</div></div>`).join('')||'<div style="color:var(--muted);font-size:13px">Пока нет уведомлений</div>';
+  } else box.style.display='none';
+}
+async function markRead(){ await jput('/api/v1/notifications/read-all',{}); openNotifications(); openNotifications(); refreshBell(); }
 
 /* ============ NAV ============ */
 async function nav(id){
@@ -57,9 +80,15 @@ async function nav(id){
 async function renderDashboard(dash,list){
   const s=await jget('/api/v1/analytics/summary');
   const h=await jget('/api/v1/health');
+  const views=(s.views||{});
+  const max=Math.max(1,...(views.days||[]).map(d=>d.views));
+  const bars=(views.days||[]).slice(-14).map(d=>`<div style="flex:1;display:flex;align-items:end;justify-content:center"><div title="${d.date}: ${d.views}" style="width:70%;height:${Math.round(d.views/max*46)+3}px;background:#C9A86A;border-radius:3px"></div></div>`).join('');
   dash.innerHTML=`<div class="grid2">
     <div class="card"><b>Аналитика</b><div>Заявок: ${s.leads||0} · Проектов: ${s.projects||0} · Каталог: ${s.catalog||0}</div></div>
-    <div class="card"><b>Система</b> <span class="badge">● ${h.status||'ok'}</span><div style="font-size:13px;color:#666">API работает · Storage OK</div></div></div>
+    <div class="card"><b>Система</b> <span class="badge">● ${h.status||'ok'}</span><div style="font-size:13px;color:var(--muted)">API работает · Storage OK</div></div></div>
+    <div class="card"><b>Посетители</b><span style="float:right;color:var(--muted);font-size:13px">всего ${views.total||0} · сегодня ${views.today||0}</span>
+      <div style="display:flex;gap:4px;height:52px;margin-top:10px;align-items:end">${bars||'<span style="color:var(--muted);font-size:12px">Данных пока нет</span>'}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">Просмотры страниц за 14 дней</div></div>
     <div class="card"><b>Быстрые действия</b><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
       <button class="btn" onclick="quickAdd('projects')">+ Проект</button>
       <button class="btn" onclick="quickAdd('catalog')">+ Каталог</button>
@@ -81,6 +110,7 @@ async function editLead(id){
 /* ============ SETTINGS ============ */
 async function renderSettings(list){
   const s=await jget('/api/v1/settings')||{};
+  const smtp=s.smtp||{}, fcm=s.fcm||{};
   list.innerHTML=`<div class="card"><h3>Настройки сайта</h3>
     <label>Название сайта</label><input id="s_siteName" class="input" value="${esc(s.siteName||'')}">
     <label style="display:block;margin-top:8px">Телефон</label><input id="s_phone" class="input" value="${esc(s.phone||'')}">
@@ -88,12 +118,27 @@ async function renderSettings(list){
     <label style="display:block;margin-top:8px">Адрес</label><input id="s_address" class="input" value="${esc(s.address||'')}">
     <label style="display:block;margin-top:8px" title="Заголовок страницы в поисковой выдаче">SEO Title сайта ⓘ</label><input id="s_seoTitle" class="input" value="${esc((s.seo&&s.seo.title)||'')}">
     <label style="display:block;margin-top:8px" title="Описание для поисковиков (150-160 символов)">SEO Description ⓘ</label><textarea id="s_seoDesc" class="input">${esc((s.seo&&s.seo.desc)||'')}</textarea>
-    <button class="btn" style="margin-top:10px" onclick="saveSettings()">Сохранить</button><span id="s_msg" style="margin-left:10px;color:green"></span></div>`;
+    <h3 style="margin-top:18px">Уведомления и бэкапы</h3>
+    <label style="display:block;margin-top:6px" title="Куда слать уведомления о новых заявках">Email для уведомлений ⓘ</label><input id="s_notifyEmail" class="input" value="${esc(s.notifyEmail||'')}" placeholder="manager@meb.local">
+    <label style="display:block;margin-top:8px" title="Автоматический бэкап базы и настроек">Расписание авто-бэкапа ⓘ</label>
+    <select id="s_backupSchedule" class="input">${[['off','Выключено'],['daily','Раз в день'],['weekly','Раз в неделю']].map(([v,n])=>`<option value="${v}" ${s.backupSchedule===v?'selected':''}>${n}</option>`).join('')}</select>
+    ${s.lastAutoBackup?`<div style="font-size:12px;color:var(--muted);margin-top:4px">Последний авто-бэкап: ${esc(String(s.lastAutoBackup).slice(0,19))}</div>`:''}
+    <label style="display:block;margin-top:10px" title="SMTP-сервер для отправки писем. Без TLS на порту 25 или relay внутри сети.">SMTP хост / порт ⓘ</label>
+    <div style="display:flex;gap:8px"><input id="s_smtpHost" class="input" placeholder="smtp.example.com" value="${esc(smtp.host||'')}"><input id="s_smtpPort" class="input" style="max-width:100px" placeholder="25" value="${esc(smtp.port||'')}"></div>
+    <label style="display:block;margin-top:8px">SMTP пользователь / пароль (если требуется)</label>
+    <div style="display:flex;gap:8px"><input id="s_smtpUser" class="input" value="${esc(smtp.user||'')}"><input id="s_smtpPass" class="input" type="password" value="${esc(smtp.pass||'')}"></div>
+    <label style="display:block;margin-top:8px">SMTP From</label><input id="s_smtpFrom" class="input" value="${esc(smtp.from||'')}" placeholder="noreply@meb.local">
+    <label style="display:block;margin-top:10px" title="Legacy FCM server key для push на Android. Получите в Firebase Console → Project Settings → Cloud Messaging.">FCM Server Key (Android push) ⓘ</label>
+    <input id="s_fcmKey" class="input" value="${esc(fcm.key||'')}" placeholder="AAAAx…"><input id="s_fcmTopic" class="input" style="margin-top:8px" placeholder="topic, напр. meb-admin" value="${esc(fcm.topic||'')}">
+    <button class="btn" style="margin-top:12px" onclick="saveSettings()">Сохранить всё</button><span id="s_msg" style="margin-left:10px;color:green"></span></div>`;
 }
 async function saveSettings(){
   const body={siteName:el('s_siteName').value, phone:el('s_phone').value, email:el('s_email').value, address:el('s_address').value,
-    seo:{title:el('s_seoTitle').value, desc:el('s_seoDesc').value}};
-  // preserve existing fields
+    seo:{title:el('s_seoTitle').value, desc:el('s_seoDesc').value},
+    notifyEmail:el('s_notifyEmail').value.trim(),
+    backupSchedule:el('s_backupSchedule').value,
+    smtp:{host:el('s_smtpHost').value.trim(), port:el('s_smtpPort').value.trim(), user:el('s_smtpUser').value.trim(), pass:el('s_smtpPass').value, from:el('s_smtpFrom').value.trim()},
+    fcm:{key:el('s_fcmKey').value.trim(), topic:el('s_fcmTopic').value.trim()}};
   const cur0=await jget('/api/v1/settings')||{};
   const merged={...cur0,...body};
   const r=await jput('/api/v1/settings',merged); el('s_msg').textContent=r.ok?'✓ Сохранено':'Ошибка';
@@ -121,7 +166,7 @@ async function renderMedia(list){
 async function loadMedia(q){
   const items=await jget('/api/v1/media')||[];
   const f=(items||[]).filter(m=>!q||(m.originalName||'').toLowerCase().includes(q.toLowerCase()));
-  const g=el('mediaGrid'); if(g) g.innerHTML=f.map(m=>`<div class="card" style="padding:8px"><img src="${m.url}" loading="lazy" alt="${esc(m.alt)}" style="width:100%;aspect-ratio:1;object-fit:cover;background:#eee"><div style="font-size:11px;margin-top:4px">${esc(m.originalName)}</div><button style="width:100%;margin-top:4px;font-size:11px" onclick="copyUrl('${m.url}')">Копировать URL</button><button style="width:100%;margin-top:2px;font-size:11px;color:#c00" onclick="delMedia('${m.id}')">Удалить</button></div>`).join('');
+  const g=el('mediaGrid'); if(g) g.innerHTML=f.map(m=>`<div class="card" style="padding:8px"><img src="${m.url}" loading="lazy" alt="${esc(m.alt)}" style="width:100%;aspect-ratio:1;object-fit:cover;background:#eee"><div style="font-size:11px;margin-top:4px">${esc(m.originalName)}</div><div style="font-size:10px;color:var(--muted)">${m.width?m.width+'×'+m.height+' · ':''}${Math.round((m.size||0)/1024)} KB</div><button style="width:100%;margin-top:4px;font-size:11px" onclick="copyUrl('${m.url}')">Копировать URL</button><button style="width:100%;margin-top:2px;font-size:11px;color:#c00" onclick="delMedia('${m.id}')">Удалить</button></div>`).join('');
 }
 function copyUrl(u){ navigator.clipboard.writeText(location.origin+u); alert('URL скопирован'); }
 async function delMedia(id){ if(!confirm('Удалить файл?')) return; await jdel('/api/v1/media/'+id); loadMedia('');}

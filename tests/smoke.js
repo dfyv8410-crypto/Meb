@@ -159,6 +159,22 @@ async function run(){
   t('robots.txt served',r.raw.includes('Disallow: /admin'));
   // cleanup builder page
   await req('DELETE','/api/v1/pages/'+pageId);
+  // 29 ANALYTICS pageviews
+  await req('GET','/',null,false); await req('GET','/p/about',null,false);
+  r=await req('GET','/api/v1/analytics/summary');
+  t('pageviews tracked',r.status===200&&r.json.views&&r.json.views.total>=2,'total='+(r.json.views||{}).total);
+  // 30 NOTIFICATIONS on new lead
+  r=await req('POST','/api/v1/leads-public',JSON.stringify({name:'Notify QA',phone:'+79990001122'}),false);
+  r=await req('GET','/api/v1/notifications');
+  const notes=r.json||[];
+  t('notification created for lead',notes.some(n=>n.type==='lead'));
+  r=await req('PUT','/api/v1/notifications/read-all',JSON.stringify({}));
+  t('notifications read-all',r.status===200);
+  // 31 MEDIA dimensions
+  const png=Buffer.from('89504e470d0a1a0a0000000d4948445200000064000000320802000000','hex');
+  const b64png=png.toString('base64');
+  r=await req('POST','/api/v1/media/upload',JSON.stringify({filename:'dim.png',data:b64png,alt:'dims test'}));
+  t('media width/height extracted',r.status===200&&r.json.width===100&&r.json.height===50,r.json.width+'x'+r.json.height);
   console.log('\nDONE');
 }
 run().catch(e=>{console.error('SUITE ERROR',e);process.exit(1)});

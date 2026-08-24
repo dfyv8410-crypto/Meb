@@ -5,6 +5,9 @@ const sec=require('./core/security');
 const auth=require('./core/auth');
 const Router=require('./core/router');
 const audit=require('./core/audit');
+const analytics=require('./core/analytics');
+const notifier=require('./core/notifier');
+const images=require('./core/images');
 
 const cfg=load();
 const router=new Router();
@@ -225,7 +228,19 @@ router.post('/api/v1/leads-public', async(req,res)=>{
   const body=await parseBody(req);
   if(!body.name||!body.phone) return send(res,400,{error:'Name and phone required'});
   const rec=db.insert('leads',{...body,status:'new',createdAt:new Date().toISOString()});
+  notifier.push('lead','Новая заявка: '+(body.name||''),`Телефон: ${body.phone}. ${body.message||''}`);
   send(res,200,rec)
+})
+
+// NOTIFICATIONS API
+router.get('/api/v1/notifications', async(req,res)=>{
+  const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u) return send(res,401,{error:'Unauthorized'});
+  send(res,200,db.all('notifications').slice(-50).reverse())
+})
+router.put('/api/v1/notifications/read-all', async(req,res)=>{
+  const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u) return send(res,401,{error:'Unauthorized'});
+  db.all('notifications').forEach(n=>db.update('notifications',n.id,{read:true}));
+  send(res,200,{ok:true})
 })
 
 // SEO
@@ -247,7 +262,8 @@ router.get('/api/v1/seo/sitemap.xml', async(req,res)=>{
 // ANALYTICS
 router.get('/api/v1/analytics/summary', async(req,res)=>{
   const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u) return send(res,401,{error:'Unauthorized'});
-  send(res,200,{leads:db.all('leads').length, projects:db.all('projects').length, catalog:db.all('catalog').length, reviews:db.all('reviews').length, users:db.all('users').length})
+  const views=analytics.summary(14);
+  send(res,200,{leads:db.all('leads').length, projects:db.all('projects').length, catalog:db.all('catalog').length, reviews:db.all('reviews').length, users:db.all('users').length, views})
 })
 
 // BACKUP
@@ -289,9 +305,10 @@ router.post('/api/v1/media/upload', async(req,res)=>{
   if(buf.length>cfg.uploadMax) return send(res,400,{error:'File too large'});
   const ext=path.extname(body.filename)||'.jpg';
   const name=Date.now().toString(36)+ext;
-  const dir=path.join(ROOT,'storage/uploads'); mkdirp(dir);
-  fs.writeFileSync(path.join(dir,name),buf);
-  const rec=db.insert('media',{filename:name, originalName:body.filename, size:buf.length, alt:body.alt||'', url:`/storage/uploads/${name}`});
+  mkdirp(path.join(ROOT,'storage/uploads'));
+  fs.writeFileSync(path.join(ROOT,'storage/uploads',name),buf);
+  const dims=images.dimensions(buf)||{};
+  const rec=db.insert('media',{filename:name, originalName:body.filename, size:buf.length, width:dims.width, height:dims.height, alt:body.alt||'', url:`/storage/uploads/${name}`});
   send(res,200,rec)
 })
 
@@ -383,6 +400,7 @@ function serveStatic(req,res){
 
 const server=http.createServer(async(req,res)=>{
   if(!sec.rateLimit(req.socket.remoteAddress,120,60000,'api')) return send(res,429,{error:'Rate limit'});
+  analytics.track(url.parse(req.url).pathname);
   const m=router.match(req);
   if(m){
     try{ await m.handler(req,res,m.params)}catch(e){ console.error(e); send(res,500,{error:'Internal error'})}
@@ -390,6 +408,28 @@ const server=http.createServer(async(req,res)=>{
     serveStatic(req,res);
   }
 });
+
+// SCHEDULED AUTO-BACKUP
+setInterval(()=>{
+  try{
+    const s=db.all('settings')[0]||{};
+    const sched=s.backupSchedule;
+    if(!sched||sched==='off') return;
+    const last=s.lastAutoBackup?new Date(s.lastAutoBackup).getTime():0;
+    const intervalMs=sched==='daily'?86400000:sched==='weekly'?604800000:0;
+    if(!intervalMs) return;
+    if(Date.now()-last<intervalMs) return;
+    const snapshot={}; ALL_COLS.forEach(c=> snapshot[c]=db.all(c));
+    mkdirp(path.join(ROOT,'storage/backups'));
+    const id=Date.now().toString();
+    const file=path.join(ROOT,`storage/backups/backup-${id}.json`);
+    fs.writeFileSync(file,JSON.stringify(snapshot,null,2));
+    db.insert('backups',{filename:`backup-${id}.json`,size:fs.statSync(file).size,type:'auto'});
+    const cur=db.all('settings')[0];
+    if(cur&&cur.id) db.update('settings',cur.id,{lastAutoBackup:new Date().toISOString()});
+    notifier.push('backup','Авто-бэкап создан',`Расписание: ${sched}. Файл: backup-${id}.json`);
+  }catch(e){}
+},60000);
 
 const PORT=cfg.port;
 server.listen(PORT,()=> console.log(`MEB running http://localhost:${PORT}`));
