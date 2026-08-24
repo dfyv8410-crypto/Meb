@@ -1,0 +1,7 @@
+node_modules
+storage/data/*.json
+storage/uploads/*
+!storage/uploads/.gitkeep
+storage/backups/*.json
+storage/installed.lock
+.env

@@ -1,0 +1,36 @@
+{
+  "categories": [
+    {"id":"c1","slug":"kuhni","title":"Кухни","desc":"Премиальные кухни на заказ","cover":"/frontend/assets/img/placeholder.svg","sort":1},
+    {"id":"c2","slug":"garderobnye","title":"Гардеробные","desc":"Системы хранения","cover":"/frontend/assets/img/placeholder.svg","sort":2},
+    {"id":"c3","slug":"gostinye","title":"Гостиные","desc":"Модульные гостиные","cover":"/frontend/assets/img/placeholder.svg","sort":3},
+    {"id":"c4","slug":"spalni","title":"Спальни","desc":"Спальни из массива","cover":"/frontend/assets/img/placeholder.svg","sort":4},
+    {"id":"c5","slug":"kabineti","title":"Кабинеты","desc":"Рабочие пространства","cover":"/frontend/assets/img/placeholder.svg","sort":5},
+    {"id":"c6","slug":"business","title":"Для бизнеса","desc":"Офис и HoReCa","cover":"/frontend/assets/img/placeholder.svg","sort":6}
+  ],
+  "catalog": [
+    {"id":"k1","slug":"kuhnya-nord","title":"Кухня NORD","desc":"Шпон дуба, камень, латунь. Ручная доводка.","categoryId":"c1","price":850000,"images":["/frontend/assets/img/placeholder.svg"],"featured":true,"published":true},
+    {"id":"k2","slug":"garderob-air","title":"Гардеробная AIR","desc":"Стекло бронза, профиль антрацит","categoryId":"c2","price":420000,"images":["/frontend/assets/img/placeholder.svg"],"featured":true,"published":true}
+  ],
+  "projects": [
+    {"id":"p1","slug":"zhk-river-park","title":"ЖК River Park — 146 м²","desc":"Кухня, гардеробные, кабинет. Массив ясеня, керамогранит.","category":"kuhni","images":["/frontend/assets/img/placeholder.svg","/frontend/assets/img/placeholder.svg"],"featured":true,"published":true,"year":2025},
+    {"id":"p2","slug":"dom-na-sosnah","title":"Дом на Соснах","desc":"Гостиная и спальня. Тёплый дуб, мягкий текстиль.","category":"gostinye","images":["/frontend/assets/img/placeholder.svg"],"featured":true,"published":true,"year":2025},
+    {"id":"p3","slug":"office-brass","title":"Офис BRASS","desc":"Переговорная и кабинет руководителя","category":"business","images":["/frontend/assets/img/placeholder.svg"],"featured":false,"published":true,"year":2024}
+  ],
+  "materials": [
+    {"id":"m1","slug":"dub","title":"Дуб европейский","category":"wood","desc":"Плотный, тёплый, живёт десятилетиями","image":"/frontend/assets/img/placeholder.svg"},
+    {"id":"m2","slug":"keramogranit","title":"Керамогранит","category":"stone","desc":"Не боится влаги и царапин","image":"/frontend/assets/img/placeholder.svg"},
+    {"id":"m3","slug":"latun","title":"Латунь","category":"metal","desc":"Ручная полировка, патина со временем","image":"/frontend/assets/img/placeholder.svg"}
+  ],
+  "services": [
+    {"id":"s1","slug":"design","title":"Проектирование","desc":"Замер, 3D, чертежи, спецификации","icon":"◧"},
+    {"id":"s2","slug":"production","title":"Производство","desc":"Свои ЧПУ, покрасочная, контроль качества","icon":"⬢"},
+    {"id":"s3","slug":"montage","title":"Монтаж","desc":"Аккуратная установка, защита помещения","icon":"⬣"}
+  ],
+  "reviews": [
+    {"id":"r1","author":"Анна К.","role":"ЖК River Park","text":"Мебель превзошла ожидания. Стыки идеальные, доводчики бесшумные.","rating":5,"approved":true},
+    {"id":"r2","author":"Игорь В.","role":"Дом 240 м²","text":"Сделали сложную кухню с радиусами — всё село миллиметр в миллиметр.","rating":5,"approved":true}
+  ],
+  "pages": [
+    {"id":"pg1","slug":"about","title":"О компании","h1":"Делаем мебель другого уровня","seoTitle":"О компании MEB","seoDesc":"Производство премиальной мебели","blocks":[{"type":"hero","data":{"title":"Точность до миллиметра","subtitle":"Собственное производство, ручная доводка"}},{"type":"features","data":{}}],"published":true}
+  ]
+}

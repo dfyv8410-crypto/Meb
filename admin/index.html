@@ -1,0 +1,27 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MEB Admin</title><style>
+:root{--ink:#0E0F0F;--line:#E8E6E0;--bg:#F6F5F1;--brass:#C9A86A}*{box-sizing:border-box}body{margin:0;font-family:Manrope,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+.nav{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0}
+.menu{display:flex;gap:8px;flex-wrap:wrap;padding:12px 18px}
+.menu a{padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:13px}
+.menu a.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.wrap{max-width:1100px;margin:0 auto;padding:18px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff}
+.btn{padding:10px 14px;border-radius:999px;border:1px solid var(--ink);background:var(--ink);color:#fff;cursor:pointer}
+.btn-ghost{background:#fff;color:var(--ink)}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left}
+.badge{padding:4px 8px;border-radius:999px;background:#0E0F0F;color:#fff;font-size:11px}
+@media(max-width:700px){.grid2{grid-template-columns:1fr}}
+</style></head><body>
+<div class="nav"><b>MEB Admin</b><div><span id="who" style="font-size:13px;color:#666"></span> <button class="btn btn-ghost" onclick="logout()">Выйти</button></div></div>
+<div id="login" class="wrap" style="max-width:420px"><div class="card"><h3>Вход</h3><input id="email" class="input" placeholder="email" value="admin@meb.local"><input id="pwd" class="input" placeholder="пароль" type="password" value="Admin123!"><button class="btn" onclick="doLogin()" style="margin-top:10px;width:100%">Войти</button><div id="loginMsg" style="color:#c00;margin-top:8px"></div><div style="font-size:12px;color:#888;margin-top:8px">После установки используйте созданный email/пароль. Если demo — admin@meb.local / Admin123!</div></div></div>
+<div id="app" style="display:none">
+<div class="menu" id="menu"></div>
+<div class="wrap">
+<div id="dash"></div>
+<div id="list"></div>
+<div id="formBox" style="display:none" class="card"></div>
+</div></div>
+<script src="/admin/app.js"></script>
+</body></html>

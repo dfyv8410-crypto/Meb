@@ -1,0 +1,286 @@
+const http=require('http'),fs=require('fs'),path=require('path'),url=require('url');
+const {load,ROOT}=require('./core/config');
+const db=require('./core/database');
+const sec=require('./core/security');
+const auth=require('./core/auth');
+const Router=require('./core/router');
+const audit=require('./core/audit');
+
+const cfg=load();
+const router=new Router();
+
+function send(res,code,data,headers={}){
+  const h={...sec.headers(),...headers};
+  if(typeof data==='object' && !Buffer.isBuffer(data)){ h['Content-Type']='application/json; charset=utf-8'; data=JSON.stringify(data)}
+  res.writeHead(code,h); res.end(data);
+}
+function mkdirp(p){ try{ fs.mkdirSync(p) }catch(e){ if(e.code!=='EEXIST') throw e } }
+function parseBody(req){
+  return new Promise(resolve=>{
+    let b=''; req.on('data',c=>{b+=c; if(b.length>5e6) req.destroy()}); req.on('end',()=>{
+      const ct=req.headers['content-type']||'';
+      if(ct.includes('application/json')){ try{resolve(JSON.parse(b||'{}'))}catch(e){resolve({})} }
+      else if(ct.includes('application/x-www-form-urlencoded')){ const o={}; new URLSearchParams(b).forEach((v,k)=>o[k]=v); resolve(o)}
+      else resolve(b);
+    })
+  })
+}
+function mime(p){
+  const m={'.html':'text/html','.css':'text/css','.js':'application/javascript','.json':'application/json','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.woff2':'font/woff2'};
+  return m[path.extname(p)]||'application/octet-stream';
+}
+
+// HEALTH
+router.get('/api/v1/health', (req,res)=> send(res,200,{status:'ok', version:'1.0.0', time:new Date().toISOString()}))
+
+// AUTH
+router.post('/api/v1/auth/login', async(req,res)=>{
+  const body=await parseBody(req);
+  if(!sec.rateLimit(req.socket.remoteAddress,10,60000,'login')) return send(res,429,{error:'Too many requests'});
+  const user=db.all('users').find(u=>u.email===body.email);
+  if(!user) return send(res,401,{error:'Invalid credentials'});
+  if(!sec.verifyPassword(body.password,user.salt,user.hash)) return send(res,401,{error:'Invalid credentials'});
+  const token=sec.sign({id:user.id,email:user.email,role:user.role},cfg.jwtSecret);
+  audit.log({userId:user.id,action:'login',entity:'auth',ip:req.socket.remoteAddress});
+  send(res,200,{token,user:{id:user.id,email:user.email,name:user.name,role:user.role}}, {'Set-Cookie':`token=${encodeURIComponent(token)}; HttpOnly; Path=/; SameSite=Lax; Max-Age=2592000`});
+})
+router.post('/api/v1/auth/logout', async(req,res)=> send(res,200,{ok:true},{'Set-Cookie':'token=; HttpOnly; Path=/; Max-Age=0'}))
+router.get('/api/v1/me', async(req,res)=>{
+  const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u) return send(res,401,{error:'Unauthorized'});
+  send(res,200,{id:u.id,email:u.email,name:u.name,role:u.role})
+})
+
+// SETTINGS
+router.get('/api/v1/settings', async(req,res)=>{ const s=db.all('settings')[0]||{}; send(res,200,s)})
+router.put('/api/v1/settings', async(req,res)=>{
+  const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u||!auth.can(u,'admin')) return send(res,403,{error:'Forbidden'});
+  const body=await parseBody(req);
+  const cur=db.all('settings')[0]||{id:'site'};
+  let rec;
+  if(cur.id) rec=db.update('settings',cur.id,body) || db.insert('settings',{id:'site',...body});
+  else rec=db.insert('settings',{id:'site',...body});
+  audit.log({userId:u.id,action:'update',entity:'settings',ip:req.socket.remoteAddress});
+  send(res,200,rec)
+})
+
+// GENERIC CRUD FACTORY
+function crud(col, need='editor'){
+  router.get(`/api/v1/${col}`, async(req,res)=>{
+    const q=url.parse(req.url,true).query;
+    let items=db.all(col);
+    if(q.slug) items=items.filter(x=>x.slug===q.slug);
+    if(q.category) items=items.filter(x=>x.category===q.category||x.categoryId===q.category);
+    if(q.published) items=items.filter(x=>String(x.published)===q.published);
+    if(q.q){ const qq=q.q.toLowerCase(); items=items.filter(x=>JSON.stringify(x).toLowerCase().includes(qq))}
+    send(res,200,items)
+  })
+  router.get(`/api/v1/${col}/:id`, async(req,res,params)=>{
+    const item=db.byId(col,params.id)||db.bySlug(col,params.id);
+    if(!item) return send(res,404,{error:'Not found'});
+    send(res,200,item)
+  })
+  router.post(`/api/v1/${col}`, async(req,res)=>{
+    const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u||!auth.can(u,need)) return send(res,403,{error:'Forbidden'});
+    const body=await parseBody(req);
+    const rec=db.insert(col,body);
+    audit.log({userId:u.id,action:'create',entity:col,entityId:rec.id,ip:req.socket.remoteAddress});
+    send(res,200,rec)
+  })
+  router.put(`/api/v1/${col}/:id`, async(req,res,params)=>{
+    const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u||!auth.can(u,need)) return send(res,403,{error:'Forbidden'});
+    const body=await parseBody(req);
+    const rec=db.update(col,params.id,body);
+    if(!rec) return send(res,404,{error:'Not found'});
+    audit.log({userId:u.id,action:'update',entity:col,entityId:params.id,ip:req.socket.remoteAddress});
+    send(res,200,rec)
+  })
+  router.del(`/api/v1/${col}/:id`, async(req,res,params)=>{
+    const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u||!auth.can(u,need)) return send(res,403,{error:'Forbidden'});
+    const ok=db.remove(col,params.id);
+    if(!ok) return send(res,404,{error:'Not found'});
+    audit.log({userId:u.id,action:'delete',entity:col,entityId:params.id,ip:req.socket.remoteAddress});
+    send(res,200,{ok:true})
+  })
+}
+crud('pages','editor');
+crud('categories','editor');
+crud('catalog','editor');
+crud('projects','editor');
+crud('materials','editor');
+crud('services','editor');
+crud('reviews','editor');
+crud('leads','manager');
+
+// USERS special handling (hash password, protect role escalation, never expose hash)
+router.get('/api/v1/users', async(req,res)=>{
+  const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u||!auth.can(u,'admin')) return send(res,403,{error:'Forbidden'});
+  send(res,200,db.all('users').map(x=>({id:x.id,email:x.email,name:x.name,role:x.role,createdAt:x.createdAt})))
+})
+router.get('/api/v1/users/:id', async(req,res,params)=>{
+  const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u||!auth.can(u,'admin')) return send(res,403,{error:'Forbidden'});
+  const x=db.byId('users',params.id); if(!x) return send(res,404,{error:'Not found'});
+  send(res,200,{id:x.id,email:x.email,name:x.name,role:x.role})
+})
+router.del('/api/v1/users/:id', async(req,res,params)=>{
+  const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u||!auth.can(u,'admin')) return send(res,403,{error:'Forbidden'});
+  if(u.id===params.id) return send(res,400,{error:'Нельзя удалить себя'});
+  const admins=db.all('users').filter(x=>x.role==='super_admin'||x.role==='admin');
+  const target=db.byId('users',params.id);
+  if(target&&(target.role==='super_admin'||target.role==='admin')&&admins.length<=1) return send(res,400,{error:'Последний админ не может быть удалён'});
+  const ok=db.remove('users',params.id);
+  if(!ok) return send(res,404,{error:'Not found'});
+  audit.log({userId:u.id,action:'delete',entity:'users',entityId:params.id,ip:req.socket.remoteAddress});
+  send(res,200,{ok:true})
+})
+router.post('/api/v1/users', async(req,res)=>{
+  const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u||!auth.can(u,'admin')) return send(res,403,{error:'Forbidden'});
+  const body=await parseBody(req);
+  if(!body.email||!body.password) return send(res,400,{error:'email и password обязательны'});
+  const {salt,hash}=sec.hashPassword(body.password);
+  const rec=db.insert('users',{email:sec.sanitize(body.email),name:sec.sanitize(body.name||''),role:['super_admin','admin','manager','editor'].includes(body.role)?body.role:'editor',salt,hash});
+  audit.log({userId:u.id,action:'create',entity:'users',entityId:rec.id,ip:req.socket.remoteAddress});
+  send(res,200,{id:rec.id,email:rec.email,name:rec.name,role:rec.role})
+})
+router.put('/api/v1/users/:id', async(req,res,params)=>{
+  const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u||!auth.can(u,'admin')) return send(res,403,{error:'Forbidden'});
+  const body=await parseBody(req);
+  const patch={};
+  if(body.email) patch.email=sec.sanitize(body.email);
+  if(body.name) patch.name=sec.sanitize(body.name);
+  if(body.role&&['super_admin','admin','manager','editor'].includes(body.role)) patch.role=body.role;
+  if(body.password){ const {salt,hash}=sec.hashPassword(body.password); patch.salt=salt; patch.hash=hash }
+  const rec=db.update('users',params.id,patch);
+  if(!rec) return send(res,404,{error:'Not found'});
+  audit.log({userId:u.id,action:'update',entity:'users',entityId:params.id,ip:req.socket.remoteAddress});
+  send(res,200,{id:rec.id,email:rec.email,name:rec.name,role:rec.role})
+})
+
+// LEADS public create
+router.post('/api/v1/leads-public', async(req,res)=>{
+  const body=await parseBody(req);
+  if(!body.name||!body.phone) return send(res,400,{error:'Name and phone required'});
+  const rec=db.insert('leads',{...body,status:'new',createdAt:new Date().toISOString()});
+  send(res,200,rec)
+})
+
+// SEO
+router.get('/api/v1/seo/sitemap.xml', async(req,res)=>{
+  const pages=db.all('pages'), projects=db.all('projects');
+  let xml=`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
+  xml+=`<url><loc>/</loc></url>`;
+  pages.forEach(p=> xml+=`<url><loc>/p/${p.slug}</loc></url>`);
+  projects.forEach(p=> xml+=`<url><loc>/project/${p.slug}</loc></url>`);
+  xml+=`</urlset>`;
+  send(res,200,xml,{'Content-Type':'application/xml'})
+})
+
+// ANALYTICS
+router.get('/api/v1/analytics/summary', async(req,res)=>{
+  const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u) return send(res,401,{error:'Unauthorized'});
+  send(res,200,{leads:db.all('leads').length, projects:db.all('projects').length, catalog:db.all('catalog').length, reviews:db.all('reviews').length, users:db.all('users').length})
+})
+
+// BACKUP
+router.get('/api/v1/backup/list', async(req,res)=>{
+  const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u||!auth.can(u,'admin')) return send(res,403,{error:'Forbidden'});
+  send(res,200,db.all('backups'))
+})
+router.post('/api/v1/backup/create', async(req,res)=>{
+  const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u||!auth.can(u,'admin')) return send(res,403,{error:'Forbidden'});
+  const id=Date.now().toString();
+  const snapshot={}; ['pages','catalog','projects','materials','services','reviews','leads','users','categories','settings'].forEach(c=> snapshot[c]=db.all(c));
+  const file=path.join(ROOT,`storage/backups/backup-${id}.json`);
+  mkdirp(path.join(ROOT,'storage/backups'));
+  fs.writeFileSync(file,JSON.stringify(snapshot,null,2));
+  const rec=db.insert('backups',{filename:`backup-${id}.json`,size:fs.statSync(file).size, type:'manual'});
+  audit.log({userId:u.id,action:'backup',entity:'system',ip:req.socket.remoteAddress});
+  send(res,200,rec)
+})
+router.post('/api/v1/backup/restore/:id', async(req,res,params)=>{
+  const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u||!auth.can(u,'super_admin')) return send(res,403,{error:'Forbidden'});
+  const b=db.byId('backups',params.id); if(!b) return send(res,404,{error:'Not found'});
+  // pre-restore backup
+  const snap={}; ['pages','catalog','projects','materials','services','reviews','leads','users','categories','settings'].forEach(c=> snap[c]=db.all(c));
+  fs.writeFileSync(path.join(ROOT,`storage/backups/pre-restore-${Date.now()}.json`),JSON.stringify(snap,null,2));
+  const data=JSON.parse(fs.readFileSync(path.join(ROOT,`storage/backups/${b.filename}`),'utf8'));
+  Object.keys(data).forEach(k=> db.setAll(k,data[k]));
+  audit.log({userId:u.id,action:'restore',entity:'system',entityId:b.id,ip:req.socket.remoteAddress});
+  send(res,200,{ok:true})
+})
+
+// MEDIA upload (base64 JSON fallback, no multipart dep)
+router.get('/api/v1/media', async(req,res)=> send(res,200,db.all('media')))
+router.post('/api/v1/media/upload', async(req,res)=>{
+  const u=auth.getUserFromReq(req,cfg.jwtSecret); if(!u||!auth.can(u,'editor')) return send(res,403,{error:'Forbidden'});
+  const body=await parseBody(req);
+  // expects {filename, data: base64, alt}
+  if(!body.filename||!body.data) return send(res,400,{error:'filename and data required'});
+  const buf=Buffer.from(body.data.split(',').pop(), 'base64');
+  if(buf.length>cfg.uploadMax) return send(res,400,{error:'File too large'});
+  const ext=path.extname(body.filename)||'.jpg';
+  const name=Date.now().toString(36)+ext;
+  const dir=path.join(ROOT,'storage/uploads'); mkdirp(dir);
+  fs.writeFileSync(path.join(dir,name),buf);
+  const rec=db.insert('media',{filename:name, originalName:body.filename, size:buf.length, alt:body.alt||'', url:`/storage/uploads/${name}`});
+  send(res,200,rec)
+})
+
+// INSTALLER API
+router.get('/api/v1/install/check', async(req,res)=>{
+  const checks={node:process.version, storageWritable:true, version:'1.0.0'};
+  try{fs.accessSync(path.join(ROOT,'storage'),fs.constants.W_OK)}catch(e){checks.storageWritable=false}
+  const installed=fs.existsSync(path.join(ROOT,'storage/installed.lock'));
+  send(res,200,{...checks,installed})
+})
+router.post('/api/v1/install/run', async(req,res)=>{
+  if(fs.existsSync(path.join(ROOT,'storage/installed.lock'))) return send(res,400,{error:'Already installed'});
+  const body=await parseBody(req);
+  if(!body.email||!body.password) return send(res,400,{error:'email/password required'});
+  // create admin
+  const {salt,hash}=sec.hashPassword(body.password);
+  db.insert('users',{email:body.email,name:body.name||'Admin',role:'super_admin',salt,hash});
+  db.insert('settings',{id:'site',siteName:body.siteName||'MEB',tagline:'Индивидуальная мебель',phone:body.phone||'',email:body.email});
+  if(body.demo){
+    try{
+      const seed=JSON.parse(fs.readFileSync(path.join(ROOT,'storage/demo-seed.json'),'utf8'));
+      Object.keys(seed).forEach(k=>{ if(Array.isArray(seed[k])) db.setAll(k,seed[k])});
+    }catch(e){}
+  }
+  fs.writeFileSync(path.join(ROOT,'storage/installed.lock'),new Date().toISOString());
+  send(res,200,{ok:true})
+})
+
+// STATIC
+function serveStatic(req,res){
+  const parsed=url.parse(req.url);
+  let p=parsed.pathname;
+  if(p==='/' ) p='/frontend/index.html';
+  else if(p==='/admin' || p==='/admin/') p='/admin/index.html';
+  else if(p==='/install' || p==='/install/') p='/installer/index.html';
+  const full=path.join(ROOT,p);
+  if(!full.startsWith(ROOT)) return send(res,403,'Forbidden');
+  if(fs.existsSync(full) && fs.statSync(full).isFile()){
+    const data=fs.readFileSync(full);
+    res.writeHead(200,{...sec.headers(),'Content-Type':mime(full),'Cache-Control':p.includes('/storage/')?'public, max-age=31536000':'no-cache'});
+    return res.end(data);
+  }
+  // SPA fallback for frontend pretty urls
+  if(!p.startsWith('/api/') && !p.startsWith('/storage/')){
+    const idx=fs.readFileSync(path.join(ROOT,'frontend/index.html'));
+    res.writeHead(200,{...sec.headers(),'Content-Type':'text/html'}); return res.end(idx);
+  }
+  send(res,404,{error:'Not found'})
+}
+
+const server=http.createServer(async(req,res)=>{
+  if(!sec.rateLimit(req.socket.remoteAddress,120,60000,'api')) return send(res,429,{error:'Rate limit'});
+  const m=router.match(req);
+  if(m){
+    try{ await m.handler(req,res,m.params)}catch(e){ console.error(e); send(res,500,{error:'Internal error'})}
+  } else {
+    serveStatic(req,res);
+  }
+});
+
+const PORT=cfg.port;
+server.listen(PORT,()=> console.log(`MEB running http://localhost:${PORT}`));

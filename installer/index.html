@@ -1,0 +1,43 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MEB Installer</title><style>
+*{box-sizing:border-box}body{margin:0;font-family:Manrope,system-ui,sans-serif;background:#F6F5F1;color:#0E0F0F}
+.wrap{max-width:720px;margin:40px auto;padding:0 18px}
+.card{background:#fff;border:1px solid #E8E6E0;border-radius:16px;padding:22px}
+.step{display:flex;gap:10px;margin:6px 0;font-size:13px}
+.dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:#E8E6E0;font-size:12px}
+.dot.on{background:#0E0F0F;color:#fff}
+.input{width:100%;padding:12px;border:1px solid #E8E6E0;border-radius:10px;font:inherit;margin-top:8px}
+.btn{padding:12px 18px;border-radius:999px;border:1px solid #0E0F0F;background:#0E0F0F;color:#fff;cursor:pointer;margin-top:12px}
+</style></head><body><div class="wrap">
+<h1 style="font-family:serif">MEB Installer</h1>
+<div id="steps"></div>
+<div class="card" id="box"></div>
+</div>
+<script>
+let step=1; let demo=true;
+const labels=['Проверка','Администратор','Сайт','Установка','Готово'];
+function renderSteps(){ document.getElementById('steps').innerHTML='<div style="display:flex;gap:8px;margin-bottom:14px">'+labels.map((l,i)=>`<div class="step"><span class="dot ${step>=i+1?'on':''}">${i+1}</span>${l}</div>`).join('')+'</div>'}
+async function load(){
+  renderSteps();
+  const chk=await fetch('/api/v1/install/check').then(r=>r.json());
+  if(chk.installed){ document.getElementById('box').innerHTML='<h3>Уже установлено</h3><p>Удалите storage/installed.lock для переустановки.</p><a href="/">На сайт</a> · <a href="/admin">В админку</a>'; return}
+  if(step===1){
+    document.getElementById('box').innerHTML=`<h3>Проверка системы</h3><div>Node: ${chk.node}</div><div>Storage: ${chk.storageWritable?'OK':'Ошибка прав'}</div><label style="margin-top:12px;display:block"><input type="checkbox" ${demo?'checked':''} onchange="demo=this.checked"> Установить демо-контент (проекты, каталог, материалы)</label><button class="btn" onclick="step=2;load()">Далее</button>`;
+  } else if(step===2){
+    document.getElementById('box').innerHTML=`<h3>Супер-админ</h3><input id="email" class="input" placeholder="email" value="admin@meb.local"><input id="pwd" class="input" placeholder="пароль" type="password" value="Admin123!"><input id="name" class="input" placeholder="Имя" value="Администратор"><button class="btn" onclick="step=3;save()">Далее</button>`;
+  } else if(step===3){
+    document.getElementById('box').innerHTML=`<h3>Сайт</h3><input id="siteName" class="input" placeholder="Название сайта" value="MEB — Премиальная мебель"><input id="phone" class="input" placeholder="Телефон" value="+7 (900) 000-00-00"><button class="btn" onclick="doInstall()">Установить</button>`;
+  }
+}
+let tmp={};
+function save(){ tmp.email=document.getElementById('email').value; tmp.password=document.getElementById('pwd').value; tmp.name=document.getElementById('name').value; load()}
+async function doInstall(){
+  tmp.siteName=document.getElementById('siteName').value; tmp.phone=document.getElementById('phone').value; tmp.demo=demo;
+  document.getElementById('box').innerHTML='Устанавливаем...';
+  const r=await fetch('/api/v1/install/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(tmp)});
+  const j=await r.json();
+  if(!r.ok){ document.getElementById('box').innerHTML='<p style="color:red">'+j.error+'</p><button class="btn" onclick="step=1;load()">Назад</button>'; return}
+  step=5; renderSteps();
+  document.getElementById('box').innerHTML='<h3>Готово ✓</h3><p>Система установлена. Installer заблокирован.</p><a class="btn" href="/admin">Перейти в админку</a> <a class="btn" style="background:#fff;color:#0E0F0F" href="/">На сайт</a>';
+}
+load();
+</script></body></html>

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MEB — Премиальная мебель на заказ</title>
+<meta name="description" content="Индивидуальная мебель под ваше пространство. Кухни, гардеробные, гостиные. Собственное производство, точность до миллиметра.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/frontend/assets/css/premium.css">
+<meta property="og:title" content="MEB — Премиальная мебель"><meta property="og:image" content="/frontend/assets/img/placeholder.svg">
+</head>
+<body>
+<header class="nav"><div class="container nav-inner">
+  <a class="logo" href="/">MEB</a>
+  <nav class="nav-links"><a href="#catalog">Каталог</a><a href="#projects">Проекты</a><a href="#materials">Материалы</a><a href="#contacts">Контакты</a></nav>
+  <a class="btn" href="#contacts">Обсудить проект</a>
+</div></header>
+
+<main>
+<section class="container hero">
+  <div>
+    <div class="badge">Собственное производство • 2012 — 2026</div>
+    <h1 class="reveal">Индивидуальная<br><em>мебель.</em> Созданная<br>под ваше пространство.</h1>
+    <p class="reveal">Премиальные кухни, гардеробные и интерьеры. Массив, камень, латунь. Ручная доводка и точность до миллиметра.</p>
+    <div style="display:flex;gap:12px;margin-top:16px"><a class="btn" href="#contacts">Обсудить проект</a><a class="btn btn-ghost" href="#projects">Смотреть проекты</a></div>
+    <div style="display:flex;gap:28px;margin-top:22px" class="muted"><span><b style="color:var(--ink)">480+</b> проектов</span><span><b style="color:var(--ink)">14</b> лет</span><span><b style="color:var(--ink)">0.2мм</b> допуск</span></div>
+  </div>
+  <div class="hero-card reveal" id="hero3d">
+    <div style="text-align:center;z-index:2"><div class="kicker">Кухня NORD — шпон дуба</div><div style="font-family:'Cormorant Garamond',serif;font-size:28px;margin-top:6px">Тёплая, точная, тихая</div></div>
+    <div class="hero-meta"><span class="kicker">Depth • Material • Light</span><span class="kicker">3D subtle parallax</span></div>
+  </div>
+</section>
+
+<section id="projects" class="container section">
+  <h2 class="h2 reveal">Избранные проекты</h2><p class="sub reveal">Каждый — под конкретный интерьер. Без типовых решений.</p>
+  <div id="projectsGrid" class="masonry"></div>
+</section>
+
+<section id="catalog" class="container section">
+  <h2 class="h2 reveal">Каталог</h2><p class="sub reveal">Кухни, гардеробные, гостиные, спальни, кабинеты и решения для бизнеса.</p>
+  <div id="catalogGrid" class="grid cols3"></div>
+</section>
+
+<section id="materials" class="container section">
+  <h2 class="h2 reveal">Материалы</h2><p class="sub reveal">Честные материалы, которые стареют красиво.</p>
+  <div id="materialsGrid" class="grid cols3"></div>
+</section>
+
+<section class="container section">
+  <div class="card" style="padding:28px;display:grid;grid-template-columns:1.2fr .8fr;gap:24px;align-items:center">
+    <div><h3 class="h2" style="font-size:30px">Приедем, замерим, спроектируем</h3><p class="muted">Замер • 3D • смета за 48 часов • монтаж с защитой помещения</p><a class="btn" href="#contacts">Оставить заявку</a></div>
+    <div class="muted" style="font-size:14px;line-height:1.7"><div>✓ Авторский надзор</div><div>✓ Доставка и монтаж</div><div>✓ Гарантия и сервис</div></div>
+  </div>
+</section>
+
+<section id="reviews" class="container section"><h2 class="h2 reveal">Отзывы</h2><div id="reviewsGrid" class="grid cols2"></div></section>
+
+<section id="contacts" class="container section">
+  <h2 class="h2">Контакты</h2>
+  <div class="grid cols2">
+    <form class="form card" style="padding:18px" onsubmit="submitLead(event)">
+      <input class="input" name="name" placeholder="Имя" required>
+      <input class="input" name="phone" placeholder="Телефон" required>
+      <input class="input" name="email" placeholder="Email">
+      <textarea class="input" name="message" placeholder="Расскажите о проекте" rows="4"></textarea>
+      <button class="btn" type="submit">Отправить</button><div id="leadMsg" class="muted"></div>
+    </form>
+    <div class="card" style="padding:18px"><div class="eyebrow">MEB Studio</div><div style="margin-top:8px">Тел: +7 (900) 000-00-00<br>Email: hello@meb.local<br>Адрес: Москва, ул. Примерная 12</div><div style="margin-top:12px" class="muted">Отвечаем в течение часа в рабочее время.</div></div>
+  </div>
+</section>
+</main>
+
+<footer class="footer"><div class="container" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><span>© 2026 MEB — Премиальная мебель</span><span><a href="/admin">Admin</a> · <a href="/install">Installer</a> · <a href="/api/v1/seo/sitemap.xml">Sitemap</a></span></div></footer>
+
+<script src="/frontend/assets/js/app.js"></script>
+</body>
+</html>
