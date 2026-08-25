@@ -96,9 +96,33 @@ router.post('/api/v1/system/update/run', async(req,res)=>{
   }
 })
 
+// APP DOWNLOAD
+router.get('/api/v1/app/latest', async(req,res)=>{
+  const dir=path.join(ROOT,'storage/releases');
+  try{
+    const files=fs.readdirSync(dir).filter(f=>f.endsWith('.apk')).sort().reverse();
+    if(!files.length) return send(res,404,{error:'No APK available'});
+    const f=files[0];
+    const ver=f.replace('meb-admin-','').replace('.apk','');
+    const st=fs.statSync(path.join(dir,f));
+    send(res,200,{version:ver,filename:f,size:st.size,url:'/api/v1/app/download'})
+  }catch(e){send(res,404,{error:'No APK available'})}
+})
+router.get('/api/v1/app/download', async(req,res)=>{
+  const dir=path.join(ROOT,'storage/releases');
+  try{
+    const files=fs.readdirSync(dir).filter(f=>f.endsWith('.apk')).sort().reverse();
+    if(!files.length){send(res,404,'No APK');return}
+    const filePath=path.join(dir,files[0]);
+    const data=fs.readFileSync(filePath);
+    res.writeHead(200,{'Content-Type':'application/vnd.android.package-archive','Content-Disposition':'attachment; filename="'+files[0]+'"','Content-Length':data.length});
+    res.end(data)
+  }catch(e){send(res,500,'Error')}
+})
+
 // ROBOTS.TXT
 router.get('/robots.txt', async(req,res)=>{
-  send(res,200,`User-agent: *\nAllow: /\nDisallow: /admin\nSitemap: /api/v1/seo/sitemap.xml\n`,{'Content-Type':'text/plain'})
+  send(res,200,`User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /install\nSitemap: /api/v1/seo/sitemap.xml\n`,{'Content-Type':'text/plain'})
 })
 
 // AUTH
@@ -324,6 +348,30 @@ router.post('/api/v1/media/upload', async(req,res)=>{
   send(res,200,rec)
 })
 
+// INSTALLER API
+router.get('/api/v1/install/check', async(req,res)=>{
+  const checks={node:process.version, storageWritable:true, version:fs.readFileSync(path.join(ROOT,'VERSION'),'utf8').trim()};
+  try{fs.accessSync(path.join(ROOT,'storage'),fs.constants.W_OK)}catch(e){checks.storageWritable=false}
+  const installed=fs.existsSync(path.join(ROOT,'storage/installed.lock'));
+  send(res,200,{...checks,installed})
+})
+router.post('/api/v1/install/run', async(req,res)=>{
+  if(fs.existsSync(path.join(ROOT,'storage/installed.lock'))) return send(res,400,{error:'Already installed'});
+  const body=await parseBody(req);
+  if(!body.email||!body.password) return send(res,400,{error:'email/password required'});
+  const {salt,hash}=sec.hashPassword(body.password);
+  db.insert('users',{email:body.email,name:body.name||'Admin',role:'super_admin',salt,hash});
+  db.insert('settings',{id:'site',siteName:body.siteName||'MEB',tagline:'Индивидуальная мебель',phone:body.phone||'',email:body.email});
+  if(body.demo){
+    try{
+      const seed=JSON.parse(fs.readFileSync(path.join(ROOT,'storage/demo-seed.json'),'utf8'));
+      Object.keys(seed).forEach(k=>{ if(Array.isArray(seed[k])) db.setAll(k,seed[k])});
+    }catch(e){}
+  }
+  fs.writeFileSync(path.join(ROOT,'storage/installed.lock'),new Date().toISOString());
+  send(res,200,{ok:true})
+})
+
 // CMS PAGE RENDERING (/p/:slug)
 const pageRender=require('./modules/pages/render');
 router.get('/p/:slug', async(req,res,params)=>{
@@ -414,6 +462,7 @@ function serveStatic(req,res){
   let p=parsed.pathname;
   if(p==='/' ) p='/frontend/index.html';
   else if(p==='/admin' || p==='/admin/') p='/admin/index.html';
+  else if(p==='/install' || p==='/install/') p='/installer/index.html';
   const full=path.join(ROOT,p);
   if(!full.startsWith(ROOT)) return send(res,403,'Forbidden');
   if(fs.existsSync(full) && fs.statSync(full).isFile()){

@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 1.9.0 — Веб-инсталлер восстановлен + Android APK + Download API
+- **Веб-инсталлер восстановлен** (/install): 7-шаговый мастер, сохраняет installed.lock
+- **Android APK**: Java-приложение (WebView admin + PIN-блокировка + настройки сервера), собирается без Gradle (aapt+javac+dx+jarsigner)
+- **API скачивания**: GET /api/v1/app/latest (инфо) + GET /api/v1/app/download (APK-файл)
+- **Admin кнопка**: «Скачать APK» в разделе Система
+- seed.js создаёт installed.lock (совместимость с веб-инсталлером)
+- VERSION читается через fs.readFileSync (совместимость с Node 8)
+- Тесты: 52/52 PASS
+
 ## 1.8.0 — Удаление веб-инсталлера
 - **Веб-инсталлер полностью удалён** (/install, API install/*): на сервере больше нет открытого установщика
 - Вместо него — CLI: `node scripts/seed.js --demo [--email=.. --password=.. --siteName=.. --phone=..]`

@@ -504,9 +504,15 @@ async function renderSystem(list){
     <div id="updMsg" style="font-size:13px;margin-top:8px;color:#555"></div>
     <div style="font-size:12px;color:#888;margin-top:8px">Перед обновлением автоматически создаётся бэкап. При ошибке — автоматический откат.</div>
   </div></div>
+  <div class="grid2">
+  <div class="card"><b>📱 Android Приложение</b>
+    <div id="apkInfo" style="margin-top:8px;font-size:13px;color:#888">Загрузка информации…</div>
+    <button id="apkDlBtn" class="btn" style="margin-top:10px;display:none" onclick="downloadApk()">⬇ Скачать APK</button>
+  </div>
   <div class="card"><b>Audit Log</b><table style="margin-top:8px"><tr><th>Когда</th><th>Кто</th><th>Действие</th><th>Объект</th></tr>
     ${logs.slice(-12).reverse().map(l=>`<tr><td>${esc((l.createdAt||'').slice(0,19))}</td><td>${esc(l.userId||'')}</td><td>${esc(l.action)}</td><td>${esc(l.entity)} ${esc(l.entityId||'')}</td></tr>`).join('')}</table>
   </div>`;
+  loadApkInfo();
 }
 async function runUpdate(){
   el('updMsg').textContent='Обновляем: бэкап → pull → миграции → проверка…';
@@ -515,4 +521,16 @@ async function runUpdate(){
     ? `✓ Обновлено до v${r.data.version}. Перезапустите сервер (pm2 restart meb), затем обновите страницу.`
     : `<span style="color:#c00">Ошибка: ${esc(r.data.error)}. Выполнен откат к бэкапу ${esc(r.data.restoredFrom||'')}</span>`;
 }
+async function loadApkInfo(){
+  try{
+    const d=await jget('/api/v1/app/latest');
+    if(d.version){
+      el('apkInfo').textContent='Версия: v'+d.version+' · '+Math.round(d.size/1024)+' КБ';
+      el('apkDlBtn').style.display='';
+    } else {
+      el('apkInfo').textContent='APK пока не доступен';
+    }
+  }catch(e){el('apkInfo').textContent='Нет данных'}
+}
+function downloadApk(){ window.open('/api/v1/app/download','_blank'); }
 checkMe();

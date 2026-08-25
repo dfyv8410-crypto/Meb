@@ -25,4 +25,5 @@ if(args.demo){
     console.log('Demo data seeded.');
   }catch(e){ console.error('demo-seed.json not readable:',e.message); process.exit(1); }
 }
+fs.writeFileSync(path.join(ROOT,'storage/installed.lock'),new Date().toISOString());
 console.log('Done. Login:',email);

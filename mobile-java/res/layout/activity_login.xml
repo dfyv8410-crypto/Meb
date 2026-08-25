@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#0F0F0F"
+    android:gravity="center"
+    android:padding="32dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="MEB"
+        android:textSize="36sp"
+        android:textColor="#C9A86A"
+        android:letterSpacing="0.3" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Премиальная мебель · панель управления"
+        android:textSize="12sp"
+        android:textColor="#888888"
+        android:layout_marginTop="4dp" />
+
+    <EditText
+        android:id="@+id/editEmail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="admin@meb.com"
+        android:textColorHint="#555555"
+        android:textColor="#FFFFFF"
+        android:inputType="textEmailAddress"
+        android:background="#1A1A1A"
+        android:padding="14dp"
+        android:layout_marginTop="32dp" />
+
+    <EditText
+        android:id="@+id/editPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="••••••"
+        android:textColorHint="#555555"
+        android:textColor="#FFFFFF"
+        android:inputType="textPassword"
+        android:background="#1A1A1A"
+        android:padding="14dp"
+        android:layout_marginTop="16dp" />
+
+    <Button
+        android:id="@+id/btnLogin"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text="Войти"
+        android:textSize="16sp"
+        android:textColor="#0F0F0F"
+        android:background="#C9A86A"
+        android:layout_marginTop="20dp" />
+
+</LinearLayout>

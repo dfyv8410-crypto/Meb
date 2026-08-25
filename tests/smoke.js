@@ -23,10 +23,16 @@ async function run(){
   try{fs.unlinkSync('storage/installed.lock')}catch(e){}
   fs.readdirSync('storage/data').forEach(f=>{ if(f.endsWith('.json')) try{fs.unlinkSync('storage/data/'+f)}catch(e){} });
   const t=(n,ok,extra='')=>console.log((ok?'PASS':'FAIL')+' | '+n+(extra?' | '+extra:''));
-  // 1 SEED via CLI (installer removed in 1.8)
+  r=await req('GET','/install',null,false);
+  t('installer html page',r.status===200&&r.raw.includes('MEB'));
+  r=await req('GET','/api/v1/install/check',null,false);
+  t('install/check before seed',r.status===200);
+  // 1 SEED via CLI for deterministic tests
   require('child_process').execSync('node scripts/seed.js --demo',{stdio:'inherit'});
-  let r=await req('GET','/api/v1/install/check',null,false);
-  t('installer API removed →404',r.status===404);
+  r=await req('GET','/api/v1/install/check',null,false);
+  t('install/check after seed shows installed',r.status===200&&r.json.installed===true);
+  r=await req('POST','/api/v1/install/run',JSON.stringify({email:'x@x.x',password:'x'}),false);
+  t('install/run blocked after install',r.status===400);
   // 4 demo data seeded
   r=await req('GET','/api/v1/projects?published=true',null,false);
   const demoProjects=r.json||[];

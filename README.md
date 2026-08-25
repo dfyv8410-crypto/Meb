@@ -1,19 +1,20 @@
 # MEB — Premium Furniture Platform
-Премиальная цифровая платформа: сайт + CMS + admin + API + Android app.
+Премиальная цифровая платформа: сайт + CMS + admin + API + installer + Android app.
 
 ## Run
 ```
-node scripts/seed.js --demo   # первичная установка (админ + демо)
+git clone https://github.com/dfyv8410-crypto/Meb.git && cd Meb
 node server.js
-# → http://localhost:3000
-# → /admin (admin@meb.local / Admin123! если demo)
+# → http://localhost:3000/install (веб-инсталлер)
+# → http://localhost:3000/admin
 ```
 
 ## Structure
 - `core/` — config, database (JsonStore), auth, security, router
 - `frontend/` — премиальный сайт (Manrope + Cormorant, editorial grid, 3D parallax)
 - `admin/` — SPA без сборки
-- `scripts/seed.js` — CLI первичной установки (веб-инсталлер удалён в v1.8)
+- `installer/` — веб-установщик
+- `scripts/seed.js` — CLI первичной установки
 - `storage/` — data, uploads, backups
 - `mobile/` — Android Kotlin App
 

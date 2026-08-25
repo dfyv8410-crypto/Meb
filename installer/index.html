@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MEB — Установка</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@400;600;700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#0f0f0f;
+--card:#181818;
+--border:#2a2a2a;
+--brass:#C9A86A;
+--brass-dim:#a68a52;
+--brass-glow:rgba(201,168,106,.12);
+--text:#e8e8e8;
+--text-dim:#888;
+--error:#c0392b;
+--error-bg:rgba(192,57,43,.08);
+--success:#27ae60;
+--radius:14px;
+--transition:.4s cubic-bezier(.4,0,.2,1);
+}
+html,body{height:100%}
+body{
+background:var(--bg);
+color:var(--text);
+font-family:'Manrope',sans-serif;
+font-weight:400;
+display:flex;align-items:center;justify-content:center;
+overflow:hidden;
+}
+.installer{
+width:100%;max-width:520px;padding:20px;position:relative;
+}
+.logo{
+font-family:'Cormorant',serif;
+font-weight:700;font-size:42px;
+color:var(--brass);
+text-align:center;
+letter-spacing:6px;
+margin-bottom:8px;
+user-select:none;
+}
+.subtitle{
+text-align:center;
+font-size:13px;
+color:var(--text-dim);
+letter-spacing:2px;
+text-transform:uppercase;
+margin-bottom:32px;
+}
+.progress-wrap{
+margin-bottom:36px;
+}
+.progress-bar{
+height:3px;
+background:var(--border);
+border-radius:3px;
+overflow:hidden;
+}
+.progress-fill{
+height:100%;
+background:linear-gradient(90deg,var(--brass-dim),var(--brass));
+border-radius:3px;
+transition:width var(--transition);
+width:0;
+}
+.progress-label{
+display:flex;justify-content:space-between;
+margin-top:10px;
+font-size:11px;
+color:var(--text-dim);
+letter-spacing:1px;
+}
+.progress-label .current{color:var(--brass);font-weight:600}
+.step-container{
+position:relative;
+min-height:380px;
+overflow:hidden;
+}
+.step{
+position:absolute;top:0;left:0;right:0;
+opacity:0;
+transform:translateX(40px);
+pointer-events:none;
+transition:opacity var(--transition),transform var(--transition);
+}
+.step.active{
+opacity:1;
+transform:translateX(0);
+pointer-events:auto;
+position:relative;
+}
+.step.exit-left{
+opacity:0;
+transform:translateX(-40px);
+}
+.step-title{
+font-family:'Cormorant',serif;
+font-size:26px;
+font-weight:600;
+color:var(--brass);
+margin-bottom:6px;
+}
+.step-desc{
+font-size:13px;
+color:var(--text-dim);
+margin-bottom:28px;
+line-height:1.6;
+}
+.card{
+background:var(--card);
+border:1px solid var(--border);
+border-radius:var(--radius);
+padding:24px;
+margin-bottom:20px;
+}
+.field{margin-bottom:18px}
+.field:last-child{margin-bottom:0}
+.field label{
+display:block;
+font-size:12px;
+font-weight:600;
+color:var(--text-dim);
+letter-spacing:.8px;
+text-transform:uppercase;
+margin-bottom:8px;
+}
+.field input[type="text"],
+.field input[type="email"],
+.field input[type="password"],
+.field input[type="tel"]{
+width:100%;
+background:var(--bg);
+border:1px solid var(--border);
+border-radius:8px;
+padding:12px 14px;
+color:var(--text);
+font-family:'Manrope',sans-serif;
+font-size:14px;
+transition:border-color .2s;
+outline:none;
+}
+.field input:focus{
+border-color:var(--brass);
+}
+.field input::placeholder{color:#555}
+.field input.invalid{border-color:var(--error)}
+.field .err-msg{
+font-size:11px;color:var(--error);
+margin-top:5px;display:none;
+}
+.field input.invalid~.err-msg{display:block}
+.toggle-row{
+display:flex;align-items:center;gap:14px;
+cursor:pointer;
+}
+.toggle{
+position:relative;width:44px;height:24px;flex-shrink:0;
+}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-track{
+position:absolute;inset:0;
+background:var(--border);
+border-radius:12px;
+transition:background .2s;
+}
+.toggle input:checked+.toggle-track{background:var(--brass)}
+.toggle-knob{
+position:absolute;top:3px;left:3px;
+width:18px;height:18px;
+background:#fff;
+border-radius:50%;
+transition:transform .2s;
+}
+.toggle input:checked~.toggle-knob{transform:translateX(20px)}
+.toggle-text{
+font-size:14px;
+color:var(--text);
+}
+.toggle-desc{
+font-size:12px;
+color:var(--text-dim);
+margin-top:4px;
+line-height:1.5;
+margin-left:58px;
+}
+.check-list{
+list-style:none;
+}
+.check-list li{
+display:flex;align-items:center;gap:10px;
+padding:10px 0;
+border-bottom:1px solid var(--border);
+font-size:14px;
+}
+.check-list li:last-child{border-bottom:none}
+.check-icon{
+width:22px;height:22px;
+border-radius:50%;
+display:flex;align-items:center;justify-content:center;
+font-size:12px;flex-shrink:0;
+}
+.check-icon.ok{background:rgba(39,174,96,.15);color:var(--success)}
+.check-icon.fail{background:var(--error-bg);color:var(--error)}
+.check-icon.pending{background:rgba(201,168,106,.1);color:var(--brass)}
+.check-label{color:var(--text-dim)}
+.check-value{
+margin-left:auto;
+font-size:13px;
+font-weight:600;
+color:var(--text);
+}
+.spinner-wrap{
+display:flex;flex-direction:column;align-items:center;
+justify-content:center;
+min-height:200px;
+gap:24px;
+}
+.spinner{
+width:48px;height:48px;
+border:3px solid var(--border);
+border-top-color:var(--brass);
+border-radius:50%;
+animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner-text{
+font-size:14px;color:var(--text-dim);
+text-align:center;
+}
+.result-box{
+text-align:center;
+padding:20px 0;
+}
+.result-icon{
+font-size:56px;
+margin-bottom:16px;
+}
+.result-title{
+font-family:'Cormorant',serif;
+font-size:28px;
+font-weight:700;
+margin-bottom:8px;
+}
+.result-title.ok{color:var(--success)}
+.result-title.err{color:var(--error)}
+.result-msg{
+font-size:14px;
+color:var(--text-dim);
+margin-bottom:24px;
+line-height:1.6;
+}
+.error-detail{
+background:var(--error-bg);
+border:1px solid rgba(192,57,43,.2);
+border-radius:8px;
+padding:14px;
+margin-bottom:24px;
+font-size:13px;
+color:#e74c3c;
+text-align:left;
+word-break:break-all;
+line-height:1.5;
+}
+.btn-row{
+display:flex;gap:12px;
+margin-top:4px;
+}
+.btn{
+flex:1;
+padding:13px 20px;
+border:none;border-radius:10px;
+font-family:'Manrope',sans-serif;
+font-size:14px;font-weight:600;
+cursor:pointer;
+transition:all .2s;
+letter-spacing:.3px;
+}
+.btn-primary{
+background:linear-gradient(135deg,var(--brass),var(--brass-dim));
+color:#0f0f0f;
+}
+.btn-primary:hover{
+box-shadow:0 4px 20px rgba(201,168,106,.3);
+transform:translateY(-1px);
+}
+.btn-primary:active{transform:translateY(0)}
+.btn-primary:disabled{
+opacity:.4;cursor:not-allowed;
+box-shadow:none;transform:none;
+}
+.btn-ghost{
+background:transparent;
+border:1px solid var(--border);
+color:var(--text-dim);
+}
+.btn-ghost:hover{border-color:var(--text-dim);color:var(--text)}
+.link-admin{
+display:inline-block;
+padding:13px 28px;
+background:linear-gradient(135deg,var(--brass),var(--brass-dim));
+color:#0f0f0f;
+text-decoration:none;
+border-radius:10px;
+font-weight:600;
+font-size:14px;
+transition:all .2s;
+}
+.link-admin:hover{
+box-shadow:0 4px 20px rgba(201,168,106,.3);
+transform:translateY(-1px);
+}
+.fade-in{animation:fadeIn .4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div class="installer">
+<div class="logo">MEB</div>
+<div class="subtitle">Мастер установки</div>
+<div class="progress-wrap">
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+<div class="progress-label"><span>Шаг <span class="current" id="stepNum">1</span> из 7</span><span id="stepLabel">Проверка системы</span></div>
+</div>
+<div class="step-container" id="stepContainer">
+
+<div class="step active" data-step="1" data-label="Проверка системы">
+<div class="step-title">Проверка системы</div>
+<div class="step-desc">Убедимся, что сервер готов к установке</div>
+<div class="card" id="checkCard">
+<ul class="check-list">
+<li><span class="check-icon pending" id="chkNode">—</span>Node.js<span class="check-value" id="valNode">проверка...</span></li>
+<li><span class="check-icon pending" id="chkStorage">—</span>Хранилище<span class="check-value" id="valStorage">проверка...</span></li>
+<li><span class="check-icon pending" id="chkVersion">—</span>Версия<span class="check-value" id="valVersion">проверка...</span></li>
+</ul>
+</div>
+<div class="btn-row">
+<button class="btn btn-primary" id="btnNext1" disabled onclick="goNext()">Далее</button>
+</div>
+</div>
+
+<div class="step" data-step="2" data-label="Администратор">
+<div class="step-title">Администратор</div>
+<div class="step-desc">Учётная запись главного администратора</div>
+<div class="card">
+<div class="field"><label>Email</label><input type="email" id="inpEmail" placeholder="admin@meb.ru" required autocomplete="email"><div class="err-msg">Введите корректный email</div></div>
+<div class="field"><label>Имя</label><input type="text" id="inpName" placeholder="Иван Петров" required autocomplete="name"><div class="err-msg">Введите имя</div></div>
+<div class="field"><label>Пароль</label><input type="password" id="inpPass" placeholder="Минимум 6 символов" required autocomplete="new-password"><div class="err-msg">Пароль должен быть не менее 6 символов</div></div>
+</div>
+<div class="btn-row">
+<button class="btn btn-ghost" onclick="goPrev()">Назад</button>
+<button class="btn btn-primary" onclick="validateAdmin()">Далее</button>
+</div>
+</div>
+
+<div class="step" data-step="3" data-label="Настройка сайта">
+<div class="step-title">Сайт</div>
+<div class="step-desc">Основные сведения о вашем сайте</div>
+<div class="card">
+<div class="field"><label>Название сайта</label><input type="text" id="inpSite" placeholder="MEB Interiors" required><div class="err-msg">Введите название</div></div>
+<div class="field"><label>Телефон</label><input type="tel" id="inpPhone" placeholder="+7 (999) 123-45-67" required><div class="err-msg">Введите номер телефона</div></div>
+</div>
+<div class="btn-row">
+<button class="btn btn-ghost" onclick="goPrev()">Назад</button>
+<button class="btn btn-primary" onclick="validateSite()">Далее</button>
+</div>
+</div>
+
+<div class="step" data-step="4" data-label="Демо-контент">
+<div class="step-title">Демо-контент</div>
+<div class="step-desc">Заполнить сайт примерами проектов и каталога</div>
+<div class="card">
+<label class="toggle-row" for="demoToggle">
+<div class="toggle"><input type="checkbox" id="demoToggle" checked><div class="toggle-track"></div><div class="toggle-knob"></div></div>
+<div>
+<div class="toggle-text">Установить демо-данные</div>
+</div>
+</label>
+<div class="toggle-desc">Будут добавлены примеры страниц, проектов, услуг и материалов для мебельного портфолио. Вы сможете удалить или заменить их позже в панели управления.</div>
+</div>
+<div class="btn-row">
+<button class="btn btn-ghost" onclick="goPrev()">Назад</button>
+<button class="btn btn-primary" onclick="goNext()">Далее</button>
+</div>
+</div>
+
+<div class="step" data-step="5" data-label="Установка">
+<div class="step-title">Установка</div>
+<div class="step-desc">Пожалуйста, не закрывайте страницу</div>
+<div id="installProgress">
+<div class="spinner-wrap">
+<div class="spinner"></div>
+<div class="spinner-text" id="installMsg">Подготовка...</div>
+</div>
+</div>
+</div>
+
+<div class="step" data-step="6" data-label="Готово">
+<div class="result-box fade-in">
+<div class="result-icon">✦</div>
+<div class="result-title ok">Установка завершена</div>
+<div class="result-msg">Платформа MEB успешно развёрнута.<br>Войдите в панель управления для начала работы.</div>
+<a href="/admin" class="link-admin">Войти в панель</a>
+</div>
+</div>
+
+<div class="step" data-step="7" data-label="Ошибка">
+<div class="result-box fade-in">
+<div class="result-icon">✕</div>
+<div class="result-title err">Ошибка установки</div>
+<div class="result-msg">Что-то пошло не так. Проверьте подробности ниже и попробуйте снова.</div>
+<div class="error-detail" id="errorDetail"></div>
+<button class="btn btn-primary" style="max-width:200px;margin:0 auto;display:block" onclick="retryInstall()">Повторить попытку</button>
+</div>
+</div>
+
+</div>
+</div>
+<script>
+const S={step:1,total:7,data:{email:'',password:'',name:'',siteName:'',phone:'',demo:true},checkOk:false};
+const stepNames=['','Проверка системы','Администратор','Настройка сайта','Демо-контент','Установка','Готово!','Ошибка'];
+function setProgress(n){
+const pct=((n-1)/(S.total-1))*100;
+document.getElementById('progressFill').style.width=pct+'%';
+document.getElementById('stepNum').textContent=n;
+document.getElementById('stepLabel').textContent=stepNames[n];
+}
+function showStep(n,dir){
+const steps=document.querySelectorAll('.step');
+steps.forEach(s=>{
+const sn=parseInt(s.dataset.step);
+if(sn===S.step&&sn!==n){s.classList.remove('active');s.classList.add(dir>0?'exit-left':'');s.style.transform=dir>0?'translateX(-40px)':'translateX(40px)';s.style.opacity='0';}
+else if(sn!==n){s.classList.remove('active','exit-left');s.style.pointerEvents='none';}
+});
+setTimeout(()=>{
+steps.forEach(s=>{s.classList.remove('exit-left');s.style.transform='';s.style.opacity='';});
+const target=document.querySelector('[data-step="'+n+'"]');
+target.classList.add('active');
+S.step=n;setProgress(n);
+},50);
+}
+function goNext(){
+if(S.step>=S.total)return;
+const next=S.step+1;
+if(next===5){showStep(5,1);runInstall();return;}
+showStep(next,1);
+}
+function goPrev(){
+if(S.step<=1)return;
+showStep(S.step-1,-1);
+}
+function checkField(id){
+const el=document.getElementById(id);
+const val=el.value.trim();
+let ok=true;
+if(id==='inpEmail')ok=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+else if(id==='inpPass')ok=val.length>=6;
+else ok=val.length>0;
+el.classList.toggle('invalid',!ok);
+return ok;
+}
+function validateAdmin(){
+const ids=['inpEmail','inpName','inpPass'];
+const all=ids.every(checkField);
+if(all){
+S.data.email=document.getElementById('inpEmail').value.trim();
+S.data.name=document.getElementById('inpName').value.trim();
+S.data.password=document.getElementById('inpPass').value;
+goNext();
+}
+}
+function validateSite(){
+const ids=['inpSite','inpPhone'];
+const all=ids.every(checkField);
+if(all){
+S.data.siteName=document.getElementById('inpSite').value.trim();
+S.data.phone=document.getElementById('inpPhone').value.trim();
+S.data.demo=document.getElementById('demoToggle').checked;
+goNext();
+}
+}
+function setLoading(on){
+document.querySelectorAll('.btn').forEach(b=>b.disabled=on);
+}
+async function runInstall(){
+setLoading(true);
+const msg=document.getElementById('installMsg');
+msg.textContent='Создание структуры базы данных...';
+try{
+await new Promise(r=>setTimeout(r,600));
+msg.textContent='Установка компонентов...';
+const body={email:S.data.email,password:S.data.password,name:S.data.name,siteName:S.data.siteName,phone:S.data.phone,demo:S.data.demo};
+const r=await fetch('/api/v1/install/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+const d=await r.json();
+if(!r.ok||d.error){throw new Error(d.error||'HTTP '+r.status);}
+msg.textContent='Готово!';
+await new Promise(r=>setTimeout(r,400));
+showStep(6,1);
+}catch(e){
+document.getElementById('errorDetail').textContent=e.message||String(e);
+showStep(7,1);
+}
+setLoading(false);
+}
+function retryInstall(){
+showStep(5,1);
+runInstall();
+}
+document.querySelectorAll('input').forEach(inp=>{
+inp.addEventListener('input',function(){this.classList.remove('invalid');});
+});
+async function runCheck(){
+const checks=[
+{id:'chkNode',val:'valNode',key:'node'},
+{id:'chkStorage',val:'valStorage',key:'storage'},
+{id:'chkVersion',val:'valVersion',key:'version'}
+];
+try{
+const r=await fetch('/api/v1/install/check');
+if(!r.ok)throw new Error('API unavailable');
+const d=await r.json();
+checks.forEach(c=>{
+const icon=document.getElementById(c.id);
+const val=document.getElementById(c.val);
+const v=d[c.key];
+if(v){
+icon.className='check-icon ok';
+icon.textContent='✓';
+val.textContent=typeof v==='string'?v:'доступно';
+}else{
+icon.className='check-icon fail';
+icon.textContent='✕';
+val.textContent='недоступно';
+}
+});
+S.checkOk=true;
+document.getElementById('btnNext1').disabled=false;
+}catch(e){
+checks.forEach(c=>{
+const icon=document.getElementById(c.id);
+const val=document.getElementById(c.val);
+icon.className='check-icon fail';
+icon.textContent='✕';
+val.textContent='ошибка';
+});
+document.getElementById('btnNext1').disabled=true;
+}
+}
+setProgress(1);
+runCheck();
+</script>
+</body>
+</html>
