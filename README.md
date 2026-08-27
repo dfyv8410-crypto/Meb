@@ -15,8 +15,9 @@ node server.js
 - `admin/` — SPA без сборки
 - `installer/` — веб-установщик
 - `scripts/seed.js` — CLI первичной установки
-- `storage/` — data, uploads, backups
-- `mobile/` — Android Kotlin App
+- `storage/` — data, uploads, backups, releases (APK)
+- `mobile/` — Android Kotlin App (Compose)
+- `mobile-java/` — Android Java App (WebView, без Gradle)
 
 ## API
 См. API.md

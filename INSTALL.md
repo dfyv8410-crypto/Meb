@@ -12,7 +12,7 @@ git clone https://github.com/dfyv8410-crypto/Meb.git
 cd Meb
 node server.js
 ```
-Откройте `http://localhost:3000/install` — мастер проведёт за 4 шага.
+Откройте `http://localhost:3000/install` — мастер проведёт за 7 шагов.
 
 ### CLI (для серверов без браузера)
 ```bash

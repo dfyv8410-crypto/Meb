@@ -71,9 +71,14 @@ REST JSON, `Authorization: Bearer <token>` или cookie
 - `POST /auth/login`, `POST /auth/logout`, `GET /me`
 - `GET/POST /pages`, `GET/POST /catalog/*`...
 - `GET /health`, `GET /seo/sitemap.xml`
+- `GET /app/latest` — инфо о последнем APK
+- `GET /app/download` — скачивание APK-файла
+- `POST /install/run` — первичная установка через веб-мастер
 
-## 10. Android App (`/mobile`)
-Native Kotlin + Jetpack Compose, Retrofit → `/api/v1/*`, DataStore, Biometric, FCM push
+## 10. Android App
+- **Kotlin + Jetpack Compose** (`/mobile`) — Retrofit → `/api/v1/*`, DataStore, Biometric, FCM push
+- **Java WebView** (`/mobile-java`) — PIN-экран → логин → WebView admin-panel, собирается без Gradle (aapt + javac + dx + jarsigner)
+- APK скачивается из админки: Система → 📱 Android Приложение → Скачать APK
 
 ## 11. Security / Performance / A11y
 - CSP, CSRF token per form, rate-limit 60/min, pbkdf2 100k iter, secure cookie

@@ -41,6 +41,15 @@
 - `GET  /api/v1/backup/list`
 - `GET  /api/v1/analytics/summary`
 - `GET  /api/v1/seo/sitemap.xml` / `GET /api/v1/seo/audit`
+- `GET  /api/v1/system/update/check` / `POST /api/v1/system/update/run`
+
+## App Download
+- `GET /api/v1/app/latest` → {version, filename, size, url}
+- `GET /api/v1/app/download` → APK-файл (application/vnd.android.package-archive)
+
+## Installer
+- `GET  /api/v1/install/check` → {node, storageWritable, version, installed}
+- `POST /api/v1/install/run` {email, password, name?, siteName?, phone?, demo?}
 
 ## Errors
 `{error: "message", code: "VALIDATION_ERROR"}` HTTP 400/401/403/404/429
