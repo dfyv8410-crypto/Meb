@@ -9,6 +9,17 @@
 
 $uriPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $docRoot = __DIR__ . '/..';
+
+// Mirror the root .htaccess deny rules so php -S behaves like Apache (dev parity).
+$deny = [
+    '#^/(config)/#', '#^/(includes)/#', '#^/(sql)/#', '#^/\.git(/|$)#',
+    '#^/storage/#',
+    '#\.(env|ini|log|sql)$#', '#^/uploads/backups(/|$)#', '#^/uploads/.*\.php$#',
+];
+foreach ($deny as $re) {
+    if (preg_match($re, $uriPath)) { http_response_code(403); exit('Forbidden'); }
+}
+
 $full = realpath($docRoot . $uriPath);
 
 if ($full !== false && strpos($full, realpath($docRoot)) === 0) {

@@ -209,5 +209,46 @@
             ],
             "published": true
         }
+    ],
+    "banners": [
+        {
+            "id": "b1",
+            "title": "Кухни из массива и камня",
+            "subtitle": "Массив дерева, камень, латунь. Ручная доводка каждой детали.",
+            "image_url": "/assets/img/scene-hero-1.svg",
+            "mobile_image_url": "/assets/img/scene-hero-2.svg",
+            "button_text": "Смотреть каталог",
+            "button_url": "/catalog",
+            "text_position": "left",
+            "overlay_opacity": 0.55,
+            "sort_order": 1,
+            "is_active": true
+        },
+        {
+            "id": "b2",
+            "title": "Дом, который стареет красиво",
+            "subtitle": "Гостиные и спальни на заказ. Собственное производство.",
+            "image_url": "/assets/img/scene-hero-2.svg",
+            "mobile_image_url": "/assets/img/scene-hero-3.svg",
+            "button_text": "Наши проекты",
+            "button_url": "/projects",
+            "text_position": "right",
+            "overlay_opacity": 0.5,
+            "sort_order": 2,
+            "is_active": true
+        },
+        {
+            "id": "b3",
+            "title": "Гардеробная как произведение",
+            "subtitle": "Шпон, стекло бронза, латунь. Системы хранения на заказ.",
+            "image_url": "/assets/img/scene-hero-3.svg",
+            "mobile_image_url": "/assets/img/scene-hero-1.svg",
+            "button_text": "В каталог",
+            "button_url": "/catalog",
+            "text_position": "center",
+            "overlay_opacity": 0.48,
+            "sort_order": 3,
+            "is_active": true
+        }
     ]
 }

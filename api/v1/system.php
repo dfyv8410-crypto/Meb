@@ -30,7 +30,7 @@ function handle_system(string $M, array $seg): void
             $rows = db()->query("SHOW TABLES")->fetchAll(PDO::FETCH_NUM);
             foreach ($rows as $r) {
                 $tbl = $r[0];
-                db()->exec("OPTIMIZE TABLE `$tbl`");
+                db()->query("OPTIMIZE TABLE `$tbl`")->fetchAll();
                 $tables[] = $tbl;
             }
             audit_log('optimize', 'system', count($tables) . ' tables');

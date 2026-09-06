@@ -266,6 +266,7 @@ function import_seed(array $seed): void
         'reviews'    => 'reviews',
         'leads'      => 'requests',
         'pages'      => 'pages',
+        'banners'    => 'banners',
     ];
     foreach ($map as $src => $table) {
         if (!isset($seed[$src]) || !is_array($seed[$src])) continue;

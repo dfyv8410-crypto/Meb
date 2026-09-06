@@ -109,7 +109,7 @@ ck("root .htaccess present", $ht !== false);
 ck("config/ blocked", is_string($ht) && preg_match('#RewriteRule \^\(config\)/#', $ht));
 ck("includes/ blocked", is_string($ht) && preg_match('#RewriteRule \^\(includes\)/#', $ht));
 ck("sql/ blocked", is_string($ht) && preg_match('#RewriteRule \^\(sql\)/#', $ht));
-ck("storage/data|backups blocked", is_string($ht) && preg_match('#storage/\(data\|backups#', $ht));
+ck("storage blocked (data|backups|all of storage/)", is_string($ht) && preg_match('#RewriteRule \^storage/#', $ht));
 ck("uploads/backups blocked (public leak fix)", is_string($ht) && preg_match('#uploads/backups#', $ht));
 ck("uploads/backups/.htaccess present (defense in depth)", is_file(MEB_UPLOADS_DIR . '/backups/.htaccess'));
 
@@ -218,8 +218,14 @@ try {
     $acts = db()->query('SELECT title, image_url, starts_at, ends_at FROM banners WHERE is_active = 1')->fetchAll(PDO::FETCH_ASSOC);
     foreach ($acts as $b) {
         if ($b['image_url'] && !preg_match('#^https?://#', $b['image_url'])) {
-            $rel = preg_replace('#^/?uploads/#', '', $b['image_url']);
-            if (!is_file(MEB_UPLOADS_DIR . '/' . $rel)) $activeBroken[] = $b['title'];
+            $path = parse_url($b['image_url'], PHP_URL_PATH) ?: '';
+            $rel = preg_replace('#^/uploads/#', '', $path);
+            if (strpos($path, '/uploads') === 0) {
+                $exists = is_file(MEB_UPLOADS_DIR . '/' . $rel);
+            } else {
+                $exists = is_file(MEB_ROOT . '/public' . $path);
+            }
+            if (!$exists) $activeBroken[] = $b['title'];
         }
         if ($b['starts_at'] && $b['ends_at'] && $b['starts_at'] > $b['ends_at']) $activeBroken[] = $b['title'] . ' (даты)';
     }

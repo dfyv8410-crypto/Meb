@@ -8,11 +8,14 @@ declare(strict_types=1);
 require_once __DIR__ . '/../includes/router.php';
 require_once __DIR__ . '/../api/v1/crud.php';
 
+if (!function_exists('site_settings')) {
 function site_settings(): array
 {
     return get_settings();
 }
+}
 
+if (!function_exists('layout_head')) {
 function layout_head(string $title, string $desc = ''): void
 {
     $s = site_settings();
@@ -61,6 +64,7 @@ function layout_head(string $title, string $desc = ''): void
 </head>
 <body><a class="skip-link" href="#main-content">К содержанию</a>';
 }
+}
 
 /**
  * Returns <img> or wordmark for the brand logo.
@@ -69,6 +73,7 @@ function layout_head(string $title, string $desc = ''): void
  * no broken <img> icon ever appears. When no logo is configured, the
  * wordmark is rendered directly.
  */
+if (!function_exists('logo_mark')) {
 function logo_mark(string $logo, string $siteName): string
 {
     if ($logo === '') {
@@ -78,7 +83,9 @@ function logo_mark(string $logo, string $siteName): string
          . 'onerror="this.style.display=\'none\';var n=this.nextElementSibling;if(n)n.style.display=\'inline\';">'
          . '<span style="display:none">' . e($siteName) . '</span>';
 }
+}
 
+if (!function_exists('layout_nav')) {
 function layout_nav(string $active = '', bool $darkTop = false): void
 {
     $s = site_settings();
@@ -129,7 +136,9 @@ function layout_nav(string $active = '', bool $darkTop = false): void
   </div>
 </div></header>';
 }
+}
 
+if (!function_exists('layout_footer')) {
 function layout_footer(): void
 {
     $s = site_settings();
@@ -190,7 +199,9 @@ function layout_footer(): void
 </body>
 </html>';
 }
+}
 
+if (!function_exists('first_image')) {
 function first_image(array $row): string
 {
     foreach (['images', 'image', 'cover'] as $k) {
@@ -202,4 +213,5 @@ function first_image(array $row): string
         }
     }
     return '/assets/img/placeholder.svg';
+}
 }

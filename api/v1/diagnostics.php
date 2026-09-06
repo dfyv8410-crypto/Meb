@@ -618,7 +618,7 @@ function handle_diagnostics(): void
     $hasRule['config']  = $ht !== false && preg_match('#RewriteRule \^\(config\)/#', $ht);
     $hasRule['includes']= $ht !== false && preg_match('#RewriteRule \^\(includes\)/#', $ht);
     $hasRule['sql']     = $ht !== false && preg_match('#RewriteRule \^\(sql\)/#', $ht);
-    $hasRule['storage'] = $ht !== false && preg_match('#RewriteRule \^storage/\(data\|backups\|installed\\\.lock\)#', $ht);
+    $hasRule['storage'] = $ht !== false && preg_match('#RewriteRule \^storage/#', $ht);
     $hasRule['backups'] = $ht !== false && preg_match('#RewriteRule \^uploads/backups#', $ht);
     $hasRule['uplphp']  = ($ht !== false && preg_match('#RewriteRule \^uploads/\.\*\\\.php\$#', $ht))
                         || (is_file(MEB_ROOT . '/uploads/.htaccess') && stripos((string) @file_get_contents(MEB_ROOT . '/uploads/.htaccess'), 'php') !== false);

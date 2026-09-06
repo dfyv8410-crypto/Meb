@@ -7,13 +7,12 @@
 
 declare(strict_types=1);
 
-define('MEB_ROOT', dirname(__DIR__));
-define('MEB_CONFIG_DIR', __DIR__);
-define('MEB_DATA_DIR', MEB_ROOT . '/storage');
-define('MEB_UPLOADS_DIR', MEB_ROOT . '/uploads');
+if (!defined('MEB_ROOT'))       define('MEB_ROOT', dirname(__DIR__));
+if (!defined('MEB_CONFIG_DIR')) define('MEB_CONFIG_DIR', __DIR__);
+if (!defined('MEB_DATA_DIR'))   define('MEB_DATA_DIR', dirname(__DIR__) . '/storage');
+if (!defined('MEB_UPLOADS_DIR')) define('MEB_UPLOADS_DIR', dirname(__DIR__) . '/uploads');
+if (!defined('MEB_LOCK_FILE'))  define('MEB_LOCK_FILE', dirname(__DIR__) . '/storage/installed.lock');
 
-// Installer lock path (same relative location as Node original: storage/…)
-define('MEB_LOCK_FILE', MEB_DATA_DIR . '/installed.lock');
 if (!is_dir(MEB_DATA_DIR)) {
     @mkdir(MEB_DATA_DIR, 0777, true);
 }
@@ -27,5 +26,5 @@ $cfgFile = MEB_CONFIG_DIR . '/app.php';
 if (is_file($cfgFile)) {
     $CFG = (array) require $cfgFile;
 }
-define('MEB_JWT_SECRET', $CFG['jwt_secret'] ?? bin2hex(random_bytes(24)));
-define('MEB_BASE_URL', $CFG['base_url'] ?? '');
+if (!defined('MEB_JWT_SECRET')) define('MEB_JWT_SECRET', $CFG['jwt_secret'] ?? bin2hex(random_bytes(24)));
+if (!defined('MEB_BASE_URL'))   define('MEB_BASE_URL', $CFG['base_url'] ?? '');

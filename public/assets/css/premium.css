@@ -333,6 +333,27 @@ h1, h2, h3, h4, h5, h6 {
   background: linear-gradient(180deg, rgba(14,12,10,.72), rgba(14,12,10,0));
   backdrop-filter: none; box-shadow: none;
 }
+/* Once scrolled (or forced .solid) the header is always a readable surface:
+   without these, .dark-top fades out and the fixed bar turns fully
+   transparent, losing the menu text against the page. */
+.nav.scrolled,
+.nav.solid {
+  background: rgba(255, 253, 249, .94);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 1px 0 var(--line-faint);
+}
+.nav.scrolled .logo,
+.nav.solid .logo { color: var(--ink-text); }
+.nav.scrolled .logo img,
+.nav.solid .logo img { filter: drop-shadow(0 2px 8px rgba(120,80,30,.12)); }
+.nav.scrolled .nav-links a,
+.nav.solid .nav-links a { color: var(--ink-text); opacity: 1; }
+.nav.scrolled .nav-links a.active,
+.nav.solid .nav-links a.active { color: var(--brass-deep); }
+.nav.scrolled .nav-cta .btn-ghost,
+.nav.solid .nav-cta .btn-ghost { border-color: var(--line); color: var(--ink-text); }
+.nav.scrolled .burger span,
+.nav.solid .burger span { background: var(--ink-text); }
 .nav:not(.dark-top):not(.scrolled):not(.solid) {
   background: var(--paper); box-shadow: 0 1px 0 var(--line-faint);
 }

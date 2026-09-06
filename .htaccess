@@ -13,7 +13,8 @@ Options -Indexes
     RewriteRule ^(config)/ - [F,L]
     RewriteRule ^(includes)/ - [F,L]
     RewriteRule ^(sql)/ - [F,L]
-    RewriteRule ^storage/(data|backups|installed\.lock) - [F,L]
+    RewriteRule ^\.git(/|$) - [F,L]
+    RewriteRule ^storage/ - [F,L]
     RewriteRule \.(env|ini|log|sql)$ - [F,L]
 
     # ---- Backup snapshots must never be downloadable (contain client PII) ----

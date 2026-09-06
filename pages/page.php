@@ -22,6 +22,7 @@ $seoDesc  = $page['seo_desc'] ?? $page['description'] ?? '';
 layout_head($page['h1'] ?: ($page['title'] ?? $page['slug'] ?? 'Страница'), $seoDesc);
 layout_nav();
 
+if (!function_exists('render_block')) {
 function render_block(array $b): void {
     $d = $b['data'] ?? [];
     $hidden = !empty($b['hidden']) ? ' style="display:none"' : '';
@@ -134,6 +135,7 @@ function render_block(array $b): void {
         if (!empty($b['text'])) echo '<section class="container section"' . $hidden . '><div class="pb-text">' . nl2br(e($b['text'])) . '</div></section>';
         break;
     }
+}
 }
 ?>
 <main id="main-content">

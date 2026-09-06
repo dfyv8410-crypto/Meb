@@ -171,19 +171,22 @@ ck("Project deleted", find_row('projects', $proj['id']) === null);
 echo "\n[MENU FLOW: Create → Sort → Toggle → Delete]\n";
 // ============================================================
 
+$menuItemsBefore = collection_list('menu_items');
 $m1 = collection_insert('menu_items', ['title' => 'Пункт 1', 'url' => '/p1', 'sort_order' => 1, 'is_active' => 1]);
 $m2 = collection_insert('menu_items', ['title' => 'Пункт 2', 'url' => '/p2', 'sort_order' => 2, 'is_active' => 1]);
 $m3 = collection_insert('menu_items', ['title' => 'Пункт 3', 'url' => '/p3', 'sort_order' => 3, 'is_active' => 0]);
 ck("Menu items created", !empty($m1['id']) && !empty($m2['id']) && !empty($m3['id']));
 
-// Sort order
+// Sort order (robust to pre-existing dynamic menu items)
 $menuItems = collection_list('menu_items');
 usort($menuItems, function ($a, $b) { return ($a['sort_order'] ?? 0) <=> ($b['sort_order'] ?? 0); });
-$firstActive = null;
-foreach ($menuItems as $mi) {
-    if (($mi['is_active'] ?? 1) == 1) { $firstActive = $mi; break; }
+$testPos = [];
+foreach ($menuItems as $i => $mi) {
+    if ($mi['title'] === 'Пункт 1') { $testPos[1] = $i; }
+    if ($mi['title'] === 'Пункт 2') { $testPos[2] = $i; }
+    if ($mi['title'] === 'Пункт 3') { $testPos[3] = $i; }
 }
-ck("Sort order correct (first active is Пункт 1)", $firstActive && $firstActive['title'] === 'Пункт 1');
+ck("Sort order correct (Пункт 1 → 2 → 3)", isset($testPos[1], $testPos[2], $testPos[3]) && $testPos[1] < $testPos[2] && $testPos[2] < $testPos[3]);
 
 // Toggle: hide m1, show m3
 collection_update('menu_items', $m1['id'], ['is_active' => 0]);
@@ -204,7 +207,7 @@ ck("Active menu: NOT Пункт 1", !in_array('Пункт 1', $activeTitles));
 collection_delete('menu_items', $m1['id']);
 collection_delete('menu_items', $m2['id']);
 collection_delete('menu_items', $m3['id']);
-ck("Menu items cleaned up", count(collection_list('menu_items')) === 0);
+ck("Menu items cleaned up", count(collection_list('menu_items')) === count($menuItemsBefore));
 
 // ============================================================
 echo "\n[PAGE BUILDER FLOW: Create → Render all 9 blocks → Delete]\n";
