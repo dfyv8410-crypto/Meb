@@ -1,32 +1,38 @@
-# INSTALL
+# INSTALL — PHP/MySQL версия
 
 ## Требования
-- Node.js ≥ 8 (рекомендуется 18+)
+- PHP 7.1+ (проверено на PHP 7.1.33)
+- MySQL 5.7+ или MariaDB 10.2+
+- Apache 2.2+ с mod_rewrite
 - 100 МБ на диск
 
-## Установка: 2 способа
+## Установка (shared hosting, Sweb.ru)
 
-### Веб-инсталлер (рекомендуется)
-```bash
-git clone https://github.com/dfyv8410-crypto/Meb.git
-cd Meb
-node server.js
-```
-Откройте `http://localhost:3000/install` — мастер проведёт за 7 шагов.
+### 1. Подготовка БД
+В панели Sweb: создайте базу данных + пользователя.
 
-### CLI (для серверов без браузера)
-```bash
-node scripts/seed.js --demo --email=you@site.ru --password=Secret
-node server.js
-```
+### 2. Загрузка файлов
+Загрузите **содержимое корня репозитория** по FTP в `public_html/`.
 
+### 3. Веб-установщик
+Откройте `https://ваш-домен/installer/` — мастер проведёт за 7 шагов:
+1. Проверка системы
+2. Подключение к MySQL
+3. Создание администратора
+4. Настройка сайта
+5. Демо-контент (опционально)
+6. Установка
+7. Результат → вход в `/admin`
 
 ## Доступы после демо-установки
-- Админка: `/admin` → admin@meb.local / Admin123!
+- Админка: `/admin` → email/пароль, заданные в установщике
 
 ## Продакшн
+- Удалите `installer/index.php` для безопасности
+- HTTPS: включите в панели Sweb
+- Бэкапы: `/admin` → Система → Бэкап
+
+## Альтернатива: CLI (если нет веб-доступа)
 ```bash
-PORT=80 node server.js          # или Nginx proxy_pass → 3000
-pm2 start server.js --name meb  # автоперезапуск
-certbot --nginx                 # HTTPS
+# Не требуется — установщик работает через браузер
 ```

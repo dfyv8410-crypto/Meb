@@ -8,3 +8,10 @@ mobile-java/build/
 mobile-java/meb-admin-java.apk
 .env
 storage/server-error.log
+storage/error.log
+config/app.php
+config/database.php
+uploads/media/*
+uploads/backups/*
+uploads/branding/*
+uploads/releases/*

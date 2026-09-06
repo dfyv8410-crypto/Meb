@@ -1,28 +1,40 @@
-# DATABASE
+# DATABASE — MEB CMS
 
 ## Engine
-`JsonStore` — файлы `/storage/data/*.json` (atomic write via tmp+rename). Интерфейс совместим с SQL адаптером.
+MySQL 5.7+ через PDO. Подготовленные выражения, JSON колонки, auto-increment-free IDs.
 
-## Collections
-- `users` {id, email, name, role(super_admin|admin|manager|editor), passHash, salt, createdAt}
-- `pages` {id, slug, title, h1, seoTitle, seoDesc, canonical, blocks:[{type, data, hidden}], published, createdAt, updatedAt}
-- `categories` {id, slug, title, desc, cover, sort}
-- `catalog_items` {id, categoryId, slug, title, desc, price, materials[], images[], specs{size, material, finish}, featured, published}
-- `projects` {id, slug, title, desc, category, images[], video, materials[], size, features[], year, published, featured}
-- `materials` {id, slug, title, category(wood|stone|metal|glass|facade|hardware|coating), desc, image, props{}}
-- `services` {id, slug, title, desc, icon, priceFrom, blocks[]}
-- `reviews` {id, author, role, text, rating, avatar, projectId, approved, createdAt}
-- `leads` {id, name, phone, email, message, projectId, source, status(new|in_progress|contacted|done|rejected), managerId, comment, createdAt}
-- `media` {id, filename, originalName, mime, size, folder, alt, width, height, createdAt}
-- `settings` {siteName, tagline, phone, email, address, mapEmbed, socials{}, seo{title, desc}, theme}
-- `audit_log` {id, userId, action, entity, entityId, meta, ip, createdAt}
-- `backups` {id, filename, size, type(manual|auto), createdAt}
+## Tables (18)
+- `users` — id, email, name, role, pass_hash, created_at, updated_at
+- `pages` — id, slug, title, h1, seo_title, seo_desc, canonical, blocks (JSON), published, created_at, updated_at
+- `catalog_categories` — id, slug, title, description, cover, sort_order
+- `catalog` — id, slug, title, description, category_id, price, images (JSON), specs (JSON), featured, published, created_at, updated_at
+- `projects` — id, slug, title, description, category, images (JSON), features (JSON), materials (JSON), year, published, created_at, updated_at
+- `materials` — id, slug, title, type, description, image, props (JSON), created_at, updated_at
+- `services` — id, slug, title, description, category, icon, price_from, created_at, updated_at
+- `reviews` — id, author, text, rating, approved, created_at, updated_at
+- `requests` — id, name, phone, email, message, status, source, comment, created_at, updated_at
+- `notifications` — id, type, title, body, meta (JSON), read, created_at, updated_at
+- `menu_items` — id, title, url, sort_order, is_active, created_at, updated_at
+- `media` — id, filename, original_name, mime, size, folder, alt, url, created_at
+- `settings` — id='site', data (JSON)
+- `audit_log` — id, user_id, action, entity, entity_id, meta (JSON), ip, created_at
+- `backups` — id, filename, size, type, created_at
+- `analytics` — id, page, views, date
+- `rate_limits` — bucket, ip, window_ts, count
 
 ## Indexes
-В памяти: Map by id + Map by slug (если есть). Поиск — линейный (до 100k записей мгновенно на Node).
+- catalog: slug, category_id, published
+- projects: slug, published
+- materials: slug
+- services: slug
+- reviews: approved
+- pages: slug
+- requests: status
+- users: email
+- analytics: date
 
-## Migrations
-`/core/migrations.js` — версионирование `storage/data/_meta.json` {version}, накатываются при старте.
+## JSON Columns
+Автоматически декодируются при чтении: images, specs, features, materials, props, blocks, meta, data.
 
 ## Demo Seed
-`storage/demo-seed.json` → при install с флагом demo=true разворачивается в коллекции.
+`storage/demo-seed.json` → при установке с demo=true импортируется в коллекции.

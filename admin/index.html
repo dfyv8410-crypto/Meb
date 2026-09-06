@@ -1,38 +1,463 @@
-<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MEB Admin</title><style>
-:root{--ink:#0E0F0F;--line:#E8E6E0;--bg:#F6F5F1;--brass:#C9A86A;--card:#fff;--muted:#666}
-body.dark{--ink:#F2F0EB;--line:#2A2A28;--bg:#121211;--card:#1B1B19;--muted:#999}
-*{box-sizing:border-box}body{margin:0;font-family:Manrope,system-ui,sans-serif;background:var(--bg);color:var(--ink)}
-.nav{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid var(--line);background:var(--card);position:sticky;top:0;z-index:10}
-.menu{display:flex;gap:8px;flex-wrap:wrap;padding:12px 18px}
-.menu a{padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);font-size:13px;color:var(--ink);text-decoration:none}
-.menu a.active{background:#0E0F0F;color:#fff;border-color:#0E0F0F}
-.wrap{max-width:1100px;margin:0 auto;padding:18px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:var(--card);color:var(--ink)}
-.btn{padding:10px 14px;border-radius:999px;border:1px solid #0E0F0F;background:#0E0F0F;color:#fff;cursor:pointer}
-body.dark .btn{border-color:#F2F0EB;background:#F2F0EB;color:#121211}
-.btn-ghost{background:transparent!important;color:var(--ink)!important;border:1px solid var(--line)!important}
-table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left}
-.badge{padding:4px 8px;border-radius:999px;background:#0E0F0F;color:#fff;font-size:11px}
-body.dark .badge{background:#F2F0EB;color:#121211}
-label{font-size:12px;color:var(--muted)}
-.bell{position:relative;background:none;border:none;font-size:20px;cursor:pointer;margin-right:6px}
-.bell .cnt{position:absolute;top:-4px;right:-8px;background:#c00;color:#fff;border-radius:999px;font-size:10px;padding:1px 5px;display:none}
-.block-row:hover{border-color:#C9A86A}
-.drag-handle{color:var(--muted);user-select:none;font-size:16px}
-@media(max-width:700px){.grid2{grid-template-columns:1fr}}
-</style></head><body>
-<div class="nav"><b>MEB Admin</b><div style="display:flex;align-items:center;gap:8px"><span id="who" style="font-size:13px;color:var(--muted)"></span><button class="bell" id="bell" onclick="openNotifications()" title="Уведомления">🔔<span class="cnt" id="bellCnt"></span></button><button class="btn btn-ghost" onclick="toggleDark()" title="Тема">🌓</button> <button class="btn btn-ghost" onclick="logout()">Выйти</button></div></div>
-<div id="login" class="wrap" style="max-width:420px"><div class="card"><h3>Вход</h3><input id="email" class="input" placeholder="email" value="admin@meb.local"><input id="pwd" class="input" placeholder="пароль" type="password" value=""><button class="btn" onclick="doLogin()" style="margin-top:10px;width:100%">Войти</button><div id="loginMsg" style="color:#c00;margin-top:8px"></div><div style="font-size:12px;color:var(--muted);margin-top:8px">Учётные данные задаётся при установке (/install). При демо-установке: admin@meb.local / Admin123!</div></div></div>
-<div id="notifBox" class="wrap card" style="display:none;max-width:520px;margin-left:auto;position:absolute;right:12px;top:60px;z-index:99"><b>Уведомления</b> <button class="btn btn-ghost" style="float:right" onclick="markRead()">Прочитать все</button><div id="notifList" style="margin-top:10px"></div></div>
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MEB Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #201D1A;
+  --ink-soft: #332E29;
+  --paper: #FBF8F3;
+  --linen: #F1ECE3;
+  --line: #E2DACB;
+  --brass: #B08952;
+  --brass-dim: #9A743F;
+  --olive: #5A7A52;
+  --card: #FFFFFF;
+  --muted: #8A8173;
+  --stone: #5F574B;
+  --error: #B54A3A;
+  --sidebar-w: 244px;
+  --radius: 10px;
+  --transition: .25s cubic-bezier(.16,1,.3,1);
+}
+body.dark {
+  --ink: #F2EFE8;
+  --ink-soft: #D8D1C2;
+  --paper: #121211;
+  --linen: #1B1B19;
+  --line: #2A2A28;
+  --card: #1B1B19;
+  --muted: #8A8173;
+  --stone: #B0A79A;
+}
+* { box-sizing: border-box; margin: 0; }
+body {
+  font-family: 'Manrope', system-ui, sans-serif;
+  background: var(--linen);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  font-size: 14px;
+}
+button { cursor: pointer; font: inherit; border: none; background: none; }
+
+/* ---- Sidebar ---- */
+.sidebar {
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: var(--sidebar-w);
+  background: var(--ink);
+  border-right: 1px solid rgba(255,255,255,.06);
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+  transition: transform var(--transition);
+}
+.sidebar-header {
+  padding: 22px 22px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0) 60%);
+}
+.sidebar-header b {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--paper);
+  display: block;
+}
+.sidebar-header .sub {
+  font-size: 10px;
+  color: var(--brass);
+  margin-top: 3px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 12px 14px;
+}
+.sidebar-nav::-webkit-scrollbar { width: 8px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.14); border-radius: 999px; }
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(251,248,243,.62);
+  text-decoration: none;
+  transition: all var(--transition);
+  margin-bottom: 2px;
+}
+.sidebar-link:hover { background: rgba(255,255,255,.07); color: var(--paper); }
+.sidebar-link.active { background: var(--brass); color: #201D1A; font-weight: 700; }
+.sidebar-link .icon { font-size: 15px; width: 20px; text-align: center; opacity: .9; }
+.sidebar-group {
+  padding: 16px 14px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--brass);
+  opacity: .85;
+}
+.sidebar-footer {
+  padding: 16px 18px;
+  border-top: 1px solid rgba(255,255,255,.07);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(251,248,243,.55);
+}
+.sidebar-footer .btn-ghost,
+.sidebar-footer .bell {
+  color: rgba(251,248,243,.72) !important;
+  border-color: rgba(255,255,255,.16) !important;
+  background: transparent !important;
+}
+.sidebar-footer .btn-ghost:hover,
+.sidebar-footer .bell:hover {
+  background: rgba(255,255,255,.08) !important;
+  color: var(--paper) !important;
+}
+.sidebar-footer .bell .cnt { top: 0; right: 0; }
+
+/* ---- Main ---- */
+.main {
+  margin-left: var(--sidebar-w);
+  min-height: 100vh;
+}
+.topbar {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+.topbar-right { display: flex; align-items: center; gap: 8px; }
+.content {
+  padding: 24px;
+  max-width: 1200px;
+}
+
+/* ---- Cards ---- */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+  transition: box-shadow var(--transition);
+}
+.card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.03); }
+
+/* ---- Grid ---- */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+/* ---- Buttons ---- */
+.btn {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.btn:hover { opacity: .88; transform: translateY(-1px); }
+.btn-ghost {
+  background: transparent !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--line) !important;
+}
+.btn-ghost:hover { border-color: var(--ink) !important; }
+.btn-accent {
+  background: var(--brass) !important;
+  border-color: var(--brass) !important;
+  color: var(--paper) !important;
+}
+.btn-danger {
+  background: var(--error) !important;
+  border-color: var(--error) !important;
+  color: var(--paper) !important;
+}
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 11px;
+  border-radius: 6px;
+  letter-spacing: .03em;
+}
+
+/* ---- Forms ---- */
+.input, select, textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  background: var(--card);
+  color: var(--ink);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--brass);
+  box-shadow: 0 0 0 3px rgba(201,169,110,.1);
+}
+label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 4px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+/* ---- Tables ---- */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+}
+td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line-faint, var(--line));
+  vertical-align: middle;
+}
+tr:hover td { background: var(--linen); }
+
+/* ---- Badge ---- */
+.badge {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+body.dark .badge { background: var(--paper); color: var(--ink); }
+.badge-success { background: var(--olive); color: var(--paper); }
+.badge-warning { background: var(--brass); color: var(--paper); }
+.badge-danger  { background: var(--error); color: var(--paper); }
+
+/* ---- Notifications ---- */
+.bell {
+  position: relative;
+  font-size: 16px;
+  padding: 6px;
+  border-radius: 6px;
+  transition: background var(--transition);
+}
+.bell:hover { background: var(--linen); }
+.bell .cnt {
+  position: absolute; top: 0; right: 0;
+  background: var(--error); color: var(--paper);
+  border-radius: 999px;
+  font-size: 9px; font-weight: 700;
+  padding: 1px 5px; display: none;
+}
+.notif-box {
+  position: fixed; top: 52px; right: 16px;
+  width: 380px; max-height: 500px;
+  overflow-y: auto;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 40px rgba(0,0,0,.1);
+  z-index: 99; padding: 16px; display: none;
+}
+
+/* ---- Toast ---- */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  padding: 14px 22px;
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 8px 32px rgba(0,0,0,.18);
+  z-index: 200;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: all .35s cubic-bezier(.16,1,.3,1);
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.toast.success { border-left: 3px solid var(--olive); }
+.toast.error   { border-left: 3px solid var(--error); }
+
+/* ---- Login ---- */
+.login-wrap {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--linen);
+}
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  padding: 36px;
+}
+.login-card h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  font-weight: 500;
+  margin: 0 0 4px;
+}
+.login-card .subtitle {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 24px;
+}
+
+/* ---- Block Row ---- */
+.block-row:hover { border-color: var(--brass) !important; }
+.drag-handle {
+  color: var(--muted);
+  user-select: none;
+  font-size: 16px;
+  cursor: grab;
+}
+
+/* ---- Stat Card ---- */
+.stat-card { text-align: center; padding: 24px; }
+.stat-card .stat-value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 36px;
+  font-weight: 500;
+  color: var(--brass);
+  line-height: 1;
+}
+.stat-card .stat-label {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+/* ---- Empty State ---- */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+}
+
+/* ---- Mobile ---- */
+.mobile-toggle { display: none; font-size: 18px; padding: 6px; }
+@media (max-width: 900px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,.2); }
+  .main { margin-left: 0; }
+  .mobile-toggle { display: block; }
+  .grid2 { grid-template-columns: 1fr; }
+  .grid3 { grid-template-columns: 1fr; }
+  .notif-box { right: 8px; left: 8px; width: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login" class="login-wrap">
+  <div class="card login-card">
+    <h2>MEB</h2>
+    <div class="subtitle">Вход в панель управления</div>
+    <div style="display:grid;gap:12px">
+      <div>
+        <label>Email</label>
+        <input id="email" class="input" placeholder="admin@example.com" autocomplete="username">
+      </div>
+      <div>
+        <label>Пароль</label>
+        <input id="pwd" class="input" placeholder="••••••••" type="password" autocomplete="current-password">
+      </div>
+      <button class="btn" onclick="doLogin()" style="margin-top:4px">Войти</button>
+      <div id="loginMsg" style="color:var(--error);font-size:13px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Notifications -->
+<div id="notifBox" class="notif-box">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+    <div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--brass);margin-bottom:2px">Оповещения</div>
+      <b style="font-size:15px">Уведомления</b>
+    </div>
+    <button class="btn btn-sm btn-ghost" onclick="markRead()">Прочитать все</button>
+  </div>
+  <div id="notifList"></div>
+</div>
+
+<!-- Admin App -->
 <div id="app" style="display:none">
-<div class="menu" id="menu"></div>
-<div class="wrap">
-<div id="dash"></div>
-<div id="list"></div>
-<div id="formBox" style="display:none" class="card"></div>
-</div></div>
-<script src="/admin/app.js"></script>
-</body></html>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <b>MEB</b>
+      <div class="sub">Admin Panel</div>
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav"></nav>
+    <div class="sidebar-footer">
+      <span id="who" style="flex:1"></span>
+      <button class="bell" id="bell" onclick="toggleNotifications()" title="Уведомления">🔔<span class="cnt" id="bellCnt"></span></button>
+      <button class="btn btn-sm btn-ghost" onclick="toggleDark()" title="Тема">🌓</button>
+      <button class="btn btn-sm btn-ghost" onclick="logout()">Выйти</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+        <span id="pageTitle" style="font-weight:600;font-size:14px"></span>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-sm btn-accent" onclick="showQuickAdd()">+ Новый элемент</button>
+      </div>
+    </div>
+    <div class="content">
+      <div id="dash"></div>
+      <div id="list"></div>
+      <div id="formBox" style="display:none" class="card"></div>
+    </div>
+  </div>
+</div>
+
+<div id="adminToast" class="toast"></div>
+<script src="/admin/app.js?v=2026-09-05"></script>
+</body>
+</html>

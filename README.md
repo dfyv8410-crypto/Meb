@@ -1,23 +1,28 @@
-# MEB — Premium Furniture Platform
-Премиальная цифровая платформа: сайт + CMS + admin + API + installer + Android app.
+# MEB — Premium Furniture CMS
+Премиальная CMS для мебельного производства: сайт + админка + API + установщик.
 
-## Run
+## Запуск (shared hosting)
 ```
-git clone https://github.com/dfyv8410-crypto/Meb.git && cd Meb
-node server.js
-# → http://localhost:3000/install (веб-инсталлер)
-# → http://localhost:3000/admin
+# Загрузите файлы на хостинг (Sweb.ru, etc.)
+# Откройте https://ваш-домен/installer/ — мастер установки
+# Войдите в /admin
 ```
 
-## Structure
-- `core/` — config, database (JsonStore), auth, security, router
-- `frontend/` — премиальный сайт (Manrope + Cormorant, editorial grid, 3D parallax)
-- `admin/` — SPA без сборки
-- `installer/` — веб-установщик
-- `scripts/seed.js` — CLI первичной установки
-- `storage/` — data, uploads, backups, releases (APK)
-- `mobile/` — Android Kotlin App (Compose)
-- `mobile-java/` — Android Java App (WebView, без Gradle)
+## Структура
+- `api/v1/` — REST API (36+ эндпоинтов)
+- `admin/` — SPA без сборки (14 разделов)
+- `pages/` — публичные страницы (SSR, PHP)
+- `installer/` — веб-установщик (7 шагов)
+- `includes/` — ядро (auth, database, helpers, security)
+- `config/` — конфигурация (создаётся установщиком)
+- `storage/` — данные, загрузки, бэкапы
+- `public/` — CSS, JS, изображения
+- `scripts/` — тесты и утилиты
+- `sql/` — схема базы данных
 
 ## API
 См. API.md
+
+## Отчёт по аудиту и ремонту
+См. REPAIR_REPORT.md — найденные ошибки, первопричины, исправления, улучшения,
+дизайн-проход и статус проверок.

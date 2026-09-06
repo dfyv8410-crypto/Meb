@@ -1,10 +1,38 @@
-# SECURITY
-- Password: PBKDF2 100k iter SHA256 + random salt
-- Auth: HMAC-SHA256 signed token, httpOnly cookie, SameSite=Lax
-- CSRF: token per form (admin), SameSite + Origin check
-- Rate limit: 60/min IP, 10/min login
-- Headers: CSP, X-Frame-Options DENY, X-Content-Type-Options nosniff, Referrer-Policy
-- Validation: sanitize HTML chars, email regex, required fields, file size 15MB, mime whitelist
-- Upload: stored outside web root logic, served via /storage/uploads with controlled name
-- RBAC: super_admin>admin>manager>editor, can() checks per route
-- Audit log: all mutations + login/backup/restore
+# SECURITY — MEB CMS
+
+## Аутентификация
+- Password: `password_hash(PASSWORD_DEFAULT)` (bcrypt) + `password_verify()`
+- Auth: JWT (HMAC-SHA256, random 48-char secret) + httpOnly cookie
+- Cookie: Secure + HttpOnly + SameSite=Lax
+
+## CSRF
+- Токен на формах (admin), Bearer-header для SPA (csrf免疫)
+
+## Rate Limiting
+- Login: 10 попыток/IP за 10 минут
+- Reviews: 3/IP за 10 минут
+
+## Security Headers
+- Content-Security-Policy (default-src 'self' + Google Fonts)
+- X-Frame-Options: DENY
+- X-Content-Type-Options: nosniff
+- Referrer-Policy: strict-origin-when-cross-origin
+- Permissions-Policy: camera=(), microphone=()
+
+## Валидация
+- XSS: `e()` (htmlspecialchars) на весь вывод
+- SQL: Prepared statements (PDO), safe_ident() для имён таблиц/столбцов
+- Email: `strtolower(trim())` нормализация
+- Upload: MIME + расширение + размер (15MB), блок PHP в uploads
+
+## RBAC
+- super_admin > admin > manager > editor
+- can() проверки на каждом маршруте
+
+## Audit Log
+- Все мутации логируются: user_id, action, entity, entity_id, ip
+
+## Apache (.htaccess)
+- Блок: config/, includes/, sql/, storage/data, storage/backups
+- Блок PHP в uploads/
+- Security headers (mod_headers)
