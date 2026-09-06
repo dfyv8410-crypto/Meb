@@ -62,20 +62,32 @@ function layout_head(string $title, string $desc = ''): void
 <body><a class="skip-link" href="#main-content">К содержанию</a>';
 }
 
-function layout_nav(string $active = ''): void
+/**
+ * Returns <img> or wordmark for the brand logo.
+ * Renders the configured logo path when set; if the image fails to load
+ * (missing file, broken CDN link), the hidden wordmark is shown instead —
+ * no broken <img> icon ever appears. When no logo is configured, the
+ * wordmark is rendered directly.
+ */
+function logo_mark(string $logo, string $siteName): string
+{
+    if ($logo === '') {
+        return '<span>' . e($siteName) . '</span>';
+    }
+    return '<img src="' . e($logo) . '" alt="' . e($siteName) . '" '
+         . 'onerror="this.style.display=\'none\';var n=this.nextElementSibling;if(n)n.style.display=\'inline\';">'
+         . '<span style="display:none">' . e($siteName) . '</span>';
+}
+
+function layout_nav(string $active = '', bool $darkTop = false): void
 {
     $s = site_settings();
     $logo = $s['logo'] ?? '';
     $siteName = $s['siteName'] ?? 'MEB';
-    echo '<header class="nav" id="siteNav"><div class="container nav-inner">
+    $navCls = 'nav' . ($darkTop ? ' dark-top' : '');
+    echo '<header class="' . $navCls . '" id="siteNav"><div class="container nav-inner">
   <a class="logo" href="/"><span class="logo-mark" aria-hidden="true"></span>';
-
-    if ($logo !== '') {
-        echo '<img src="' . e($logo) . '" alt="' . e($siteName) . '">';
-    } else {
-        echo '<span>' . e($siteName) . '</span>';
-    }
-
+    echo logo_mark($logo, $siteName);
     echo '</a>
   <nav class="nav-links" id="navLinks" aria-label="Основная навигация">';
 
@@ -96,21 +108,23 @@ function layout_nav(string $active = ''): void
         }
     } else {
         $items = [
-            'catalog'   => ['/catalog', 'Каталог'],
-            'projects'  => ['/projects', 'Проекты'],
-            'materials' => ['/materials', 'Материалы'],
-            'services'  => ['/services', 'Услуги'],
-            'contacts'  => ['/contacts', 'Контакты'],
+            ['/catalog', 'Каталог'],
+            ['/catalog', 'Коллекции'],
+            ['/projects', 'Проекты'],
+            ['/services', 'О бренде'],
+            ['/services', 'Услуги'],
+            ['/contacts', 'Контакты'],
         ];
-        foreach ($items as $key => [$href, $label]) {
-            $cls = $active === $key ? ' active' : '';
+        foreach ($items as [$href, $label]) {
+            $cls = ($active !== '' && strpos($href, '/' . $active) === 0) ? ' active' : '';
             echo '<a href="' . $href . '" class="' . $cls . '">' . e($label) . '</a>';
         }
     }
 
+    echo '<a class="btn btn-sm btn-ghost nav-overlay-cta" href="/contacts">Обсудить проект</a>';
     echo '</nav>
   <div class="nav-cta">
-    <a class="btn btn-ghost btn-sm" href="/contacts">Обсудить проект</a>
+    <a class="btn btn-sm btn-ghost desktop-only" href="/contacts">Обсудить проект</a>
     <button class="burger" id="burger" aria-label="Меню" aria-expanded="false" aria-controls="navLinks"><span></span><span></span></button>
   </div>
 </div></header>';
@@ -139,11 +153,7 @@ function layout_footer(): void
   <div class="footer-grid">
     <div class="footer-brand">
       <a class="logo" href="/"><span class="logo-mark" aria-hidden="true"></span>';
-    if ($logo !== '') {
-        echo '<img src="' . e($logo) . '" alt="' . e($siteName) . '" style="height:26px">';
-    } else {
-        echo '<span>' . e($siteName) . '</span>';
-    }
+    echo str_replace('<img ', '<img style="height:40px" ', logo_mark($logo, $siteName));
     echo '</a>
       <p class="footer-tagline">Мебель, созданная<br>с вниманием к деталям.</p>
       <p class="footer-copy">Кухни, гардеробные, гостиные. Ручная доводка и точность до миллиметра.</p>';
@@ -154,8 +164,9 @@ function layout_footer(): void
     <div class="footer-col">
       <h4>Навигация</h4>
       <a href="/catalog">Каталог</a>
+      <a href="/catalog">Коллекции</a>
       <a href="/projects">Проекты</a>
-      <a href="/materials">Материалы</a>
+      <a href="/services">О бренде</a>
       <a href="/services">Услуги</a>
       <a href="/contacts">Контакты</a>
     </div>';

@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3A322A"/>
+      <stop offset="100%" stop-color="#1D1813"/>
+    </linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4E3826"/>
+      <stop offset="100%" stop-color="#171310"/>
+    </linearGradient>
+    <linearGradient id="cab" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#332A21"/>
+      <stop offset="100%" stop-color="#1E1914"/>
+    </linearGradient>
+    <linearGradient id="island" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#DED2C0"/>
+      <stop offset="100%" stop-color="#A99C87"/>
+    </linearGradient>
+    <linearGradient id="window" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#E9DCC4" stop-opacity=".55"/>
+      <stop offset="100%" stop-color="#B9A284" stop-opacity=".12"/>
+    </linearGradient>
+    <radialGradient id="lamp" cx="50%" cy="34%" r="75%">
+      <stop offset="0%" stop-color="#EDC988" stop-opacity=".42"/>
+      <stop offset="55%" stop-color="#B98A4E" stop-opacity=".12"/>
+      <stop offset="100%" stop-color="#171412" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.05"/></feComponentTransfer>
+      <feComposite operator="over" in2="SourceGraphic"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="1000" fill="#171412"/>
+  <rect width="1600" height="1000" fill="url(#lamp)"/>
+  <rect y="690" width="1600" height="310" fill="url(#floor)"/>
+
+  <g>
+    <rect x="150" y="150" width="620" height="380" rx="6" fill="url(#window)"/>
+    <path d="M150 150 L150 530 L770 530 L770 150" stroke="#0F0D0B" stroke-width="6" fill="none"/>
+    <line x1="460" y1="150" x2="460" y2="530" stroke="#0F0D0B" stroke-width="5"/>
+    <line x1="150" y1="330" x2="770" y2="330" stroke="#0F0D0B" stroke-width="5"/>
+  </g>
+
+  <g transform="translate(120 430)">
+    <rect x="0" y="0" width="620" height="120" fill="url(#cab)"/>
+    <rect x="0" y="0" width="250" height="120" fill="url(#cab)">
+      <animate attributeName="opacity" values="0.9;1;0.9" dur="6s" repeatCount="indefinite"/>
+    </rect>
+    <line x1="0" y1="0" x2="250" y2="0" stroke="#C9A05F" stroke-width="2"/>
+    <g stroke="#000" stroke-opacity=".5" stroke-width="3">
+      <line x1="0" y1="40" x2="620" y2="40"/>
+      <line x1="0" y1="80" x2="620" y2="80"/>
+      <line x1="125" y1="0" x2="125" y2="120"/>
+      <line x1="250" y1="0" x2="250" y2="120"/>
+      <line x1="310" y1="0" x2="310" y2="120"/>
+      <line x1="370" y1="0" x2="370" y2="120"/>
+      <line x1="430" y1="0" x2="430" y2="120"/>
+      <line x1="490" y1="0" x2="490" y2="120"/>
+      <line x1="550" y1="0" x2="550" y2="120"/>
+    </g>
+  </g>
+
+  <g transform="translate(930 500)">
+    <rect x="0" y="0" width="560" height="38" fill="url(#island)"/>
+    <path d="M0 38 L0 190 L40 190 L40 40 L520 40 L520 190 L560 190 L560 38 Z" fill="#332A21"/>
+    <rect x="0" y="190" width="560" height="16" fill="#141210"/>
+    <ellipse cx="280" cy="220" rx="300" ry="22" fill="#000" opacity=".5"/>
+    <line x1="40" y1="40" x2="40" y2="190" stroke="#C9A05F" stroke-width="3" opacity=".6"/>
+  </g>
+
+  <g transform="translate(1180 560)">
+    <line x1="46" y1="0" x2="46" y2="210" stroke="#16130F" stroke-width="5"/>
+    <g>
+      <path d="M20 0 L72 0 L60 26 L32 26 Z" fill="#C9A05F" fill-opacity=".95"/>
+      <path d="M32 26 L60 26 L60 34 L32 34 Z" fill="#8A6B3A"/>
+    </g>
+    <circle cx="46" cy="0" r="60" fill="#EDC988" opacity=".28"/>
+    <ellipse cx="46" cy="216" rx="30" ry="7" fill="#000" opacity=".5"/>
+  </g>
+
+  <rect width="1600" height="1000" fill="url(#grain)" opacity=".5"/>
+</svg>

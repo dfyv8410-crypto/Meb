@@ -26,7 +26,7 @@ layout_nav('catalog');
   </div>
   <?php endif; ?>
 
-  <div class="grid cols3">
+  <div class="grid-editorial">
     <?php
       if (!$catalog) { echo '<div class="empty-state"><div class="empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" width="40" height="40"><rect x="4" y="4" width="16" height="16"/><path d="M4 10h16M10 4v16"/></svg></div><p>Каталог наполняется</p></div>'; }
       foreach ($catalog as $c) {

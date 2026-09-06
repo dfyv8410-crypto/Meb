@@ -1,6 +1,7 @@
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function _unwrap(j) { return j && j.data !== undefined ? j.data : j; }
 async function jget(p) {
@@ -22,30 +23,28 @@ function toast(msg, type = 'info') {
   clearTimeout(toastTimer);
   t.className = 'toast ' + type;
   t.textContent = msg;
-  requestAnimationFrame(() => {
-    t.classList.add('show');
-  });
+  requestAnimationFrame(() => t.classList.add('show'));
   toastTimer = setTimeout(() => t.classList.remove('show'), 4000);
 }
 
-/* ---- Card HTML ---- */
-function cardHTML(x, kind, href, imgOverride) {
-  const img = imgOverride || (x.images && x.images[0]) || x.image || x.cover || '/assets/img/placeholder.svg';
-  const inner = `<div class="card-img-wrap"><img loading="lazy" src="${esc(img)}" alt="${esc(x.title)}"></div><div class="card-body"><div class="eyebrow">${esc(kind || '')}</div><div class="card-title">${esc(x.title)}</div><div class="card-desc">${esc((x.description || x.desc || '').slice(0, 120))}</div></div>`;
-  return href ? `<a href="${esc(href)}" class="card reveal img-reveal">${inner}</a>` : `<article class="card reveal img-reveal">${inner}</article>`;
+function arrowSVG() {
+  return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
 }
 
-/* ---- Scroll Nav Shadow ---- */
+/* ---- Scroll Nav (dark glass + compact) ---- */
 const siteNav = document.getElementById('siteNav');
 if (siteNav) {
+  const body = document.body;
   const checkScroll = () => {
-    siteNav.classList.toggle('scrolled', window.scrollY > 10);
+    const sc = window.scrollY > 24;
+    siteNav.classList.toggle('scrolled', sc);
+    body.classList.toggle('nav-scrolled', sc);
   };
   window.addEventListener('scroll', checkScroll, { passive: true });
   checkScroll();
 }
 
-/* ---- Mobile Menu (full-height overlay) ---- */
+/* ---- Mobile Menu (fullscreen overlay) ---- */
 const burger = document.getElementById('burger');
 const navLinksM = document.getElementById('navLinks');
 function setMenu(open) {
@@ -55,19 +54,15 @@ function setMenu(open) {
   if (burger) burger.setAttribute('aria-expanded', String(open));
 }
 if (burger && navLinksM) {
-  burger.addEventListener('click', () => {
-    setMenu(!navLinksM.classList.contains('open'));
-  });
-  navLinksM.addEventListener('click', e => {
-    if (e.target.closest('a')) setMenu(false);
-  });
+  burger.addEventListener('click', () => setMenu(!navLinksM.classList.contains('open')));
+  navLinksM.addEventListener('click', e => { if (e.target.closest('a')) setMenu(false); });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && navLinksM.classList.contains('open')) setMenu(false);
   });
 }
 
 /* ============================================
-   HERO SLIDER
+   HERO SLIDER — cinematic crossfade cover
    ============================================ */
 function initHeroSlider() {
   const slider = $('#heroSlider');
@@ -77,101 +72,111 @@ function initHeroSlider() {
   const pagination = $('#heroPagination');
   if (!slider || !track) return;
 
-  const INTERVAL = 6000;
+  const INTERVAL = 7000;
+  const FALLBACK_SLIDES = [
+    {
+      image_url: '/assets/img/scene-hero-1.svg',
+      title: 'Кухни, которые\nживут десятилетиями',
+      description: 'Массив, камень, латунь. Ручная доводка и точность до миллиметра. Кухни, гардеробные и гостиные на заказ.',
+      kicker: 'Премиальная мебель на заказ',
+      button_text: 'Смотреть коллекцию',
+      button_url: '/catalog',
+      text_position: 'left'
+    },
+    {
+      image_url: '/assets/img/scene-hero-2.svg',
+      title: 'Интерьер как\nархитектура дома',
+      description: 'Проектируем под ваше пространство. 3D-проект и смета в течение 48 часов.',
+      kicker: 'Студия и производство',
+      button_text: 'Обсудить проект',
+      button_url: '/contacts',
+      text_position: 'left'
+    },
+    {
+      image_url: '/assets/img/scene-hero-3.svg',
+      title: 'Материалы,\nкоторые стареют красиво',
+      description: 'Массив, камень, латунь, стекло. Мы собираем мебель навсегда.',
+      kicker: 'Честные материалы',
+      button_text: 'Смотреть материалы',
+      button_url: '/materials',
+      text_position: 'right'
+    }
+  ];
+
   let slides = [];
   let current = 0;
   let timer = null;
   let paused = false;
-  let touchStartX = 0;
-  let touchStartY = 0;
+  let touchStartX = 0, touchStartY = 0;
   let isSwiping = false;
 
   async function loadBanners() {
     let banners = [];
-    try {
-      banners = await jget('/api/v1/banners-public');
-    } catch (e) {}
+    try { banners = await jget('/api/v1/banners-public'); } catch (e) {}
     return Array.isArray(banners) ? banners : [];
   }
 
   function renderSlide(banner, index) {
-    const img = banner.image_url || banner.image || banner.cover || '/assets/img/placeholder.svg';
-    const mobileImg = banner.mobile_image_url || '';
+    const img = banner.image_url || banner.image || banner.cover || '';
     const title = banner.title || banner.name || '';
     const desc = banner.description || banner.subtitle || '';
     const link = banner.button_url || banner.url || banner.link || '';
-    const linkLabel = banner.button_text || banner.button || 'Открыть';
+    const linkLabel = banner.button_text || banner.button || 'Подробнее';
     const kicker = banner.kicker || banner.badge || '';
     const pos = banner.text_position || banner.position || 'left';
     const posClass = 'pos-' + pos;
-    const overlayClass = (pos === 'center') ? 'center' : (pos === 'right' ? 'right' : 'left');
 
-    let actionsHtml = '';
-    if (link) {
-      actionsHtml = `<div class="hero-slide-actions">
-        <a class="link-arrow" href="${esc(link)}">${esc(linkLabel)}</a>
-      </div>`;
-    }
+    const primaryHref = link || '/catalog';
+    const primaryLabel = link ? linkLabel : 'Смотреть коллекцию';
+
+    const actionsHtml = `<div class="hero-slide-actions">
+      <a class="btn btn-light" href="${esc(primaryHref)}"><span>${esc(primaryLabel)}</span><span class="btn-ar">${arrowSVG()}</span></a>
+      <a class="btn btn-ghost-light" href="/catalog"><span>В каталог</span></a>
+    </div>`;
 
     const isFirst = index === 0;
     const loadingAttr = isFirst ? 'loading="eager"' : 'loading="lazy"';
 
     return `<div class="hero-slide${isFirst ? ' active' : ''}" data-index="${index}">
       <img class="hero-slide-img" src="${esc(img)}" alt="${esc(title)}" ${loadingAttr}>
-      ${mobileImg ? `<img class="hero-slide-img-mobile" src="${esc(mobileImg)}" alt="${esc(title)}" ${loadingAttr}>` : ''}
-      <div class="hero-slide-overlay ${overlayClass}"></div>
+      <div class="hero-slide-overlay ${pos === 'center' ? 'center' : (pos === 'right' ? 'right' : 'left')}"></div>
       <div class="hero-slide-content ${posClass}">
-        ${kicker ? '<div class="hero-slide-kicker">' + esc(kicker) + '</div>' : ''}
-        <h2 class="hero-slide-title">${esc(title).replace(/\n/g, '<br>')}</h2>
-        ${desc ? '<div class="hero-slide-desc">' + esc(desc) + '</div>' : ''}
+        ${kicker ? '<div class="hero-slide-kicker">' + esc(kicker) + '</div>' : '<div class="hero-slide-kicker">Премиальная мебель на заказ</div>'}
+        <h2 class="hero-slide-title">${esc(title).replace(/\n/g, '<br>') || 'Мебель на заказ'}</h2>
+        ${desc ? '<p class="hero-slide-desc">' + esc(desc) + '</p>' : ''}
         ${actionsHtml}
       </div>
     </div>`;
   }
 
-  function renderFallback() {
-    const siteName = 'ГОДНАЯ МЕБЕЛЬ';
-    const tagline = 'Кухни, гардеробные и интерьеры из массива, камня и латуни. Ручная доводка и точность до миллиметра.';
-    slider.outerHTML = `<section class="hero-fallback">
-      <div class="hero-fallback-inner container">
-        <div class="hero-fallback-kicker">Мебель созданная вручную</div>
-        <h1 class="hero-fallback-title">ПРОСТРАНСТВО,<br>МАТЕРИАЛ,<br>ХАРАКТЕР.</h1>
-        <p class="hero-fallback-desc">${esc(tagline)}</p>
-        <div class="hero-fallback-links">
-          <a class="link-arrow" href="/catalog">Коллекция</a>
-          <a class="link-arrow" href="/projects">Проекты</a>
-        </div>
-      </div>
-      <div class="hero-fallback-meta">
-        <span><em>01</em> / МЕБЕЛЬ С ХАРАКТЕРОМ</span>
-        <span>Листайте вниз ↓</span>
-      </div>
-    </section>`;
+  function renderFallbackSlide(slide, index) {
+    const banner = Object.assign({}, slide);
+    if (!banner.title) banner.title = 'Премиальная мебель на заказ';
+    return renderSlide(banner, index);
   }
 
   function goTo(index) {
+    if (slides.length === 0) return;
     if (index < 0) index = slides.length - 1;
     if (index >= slides.length) index = 0;
+    const prev = current;
+    current = index;
 
-    track.classList.add('no-transition');
-    track.style.transform = 'translateX(-' + (current * 100) + '%)';
-    requestAnimationFrame(() => {
-      track.classList.remove('no-transition');
-      current = index;
-      track.style.transform = 'translateX(-' + (current * 100) + '%)';
-
-      const allSlides = $$('.hero-slide');
-      allSlides.forEach((s, i) => {
-        s.classList.toggle('active', i === current);
-      });
-
-      const dots = $$('.hero-dot');
-      dots.forEach((d, i) => {
-        d.classList.toggle('active', i === current);
-      });
-      const heroIndexEl = document.getElementById('heroIndex');
-      if (heroIndexEl) heroIndexEl.textContent = String(current + 1).padStart(2, '0');
+    $$('.hero-slide').forEach((s, i) => {
+      const on = i === index;
+      s.classList.toggle('active', on);
+      if (on && !reduceMotion()) {
+        // restart the slow cinematic zoom on the freshly shown image
+        const imgs = s.querySelectorAll('.hero-slide-img');
+        imgs.forEach(im => { im.style.transition = 'none'; im.style.transform = 'scale(1.12)'; });
+        requestAnimationFrame(() => { imgs.forEach(im => { im.style.transition = ''; im.style.transform = ''; }); });
+      }
     });
+    const dots = $$('.hero-dot');
+    dots.forEach((d, i) => d.classList.toggle('active', i === current));
+    const heroIndexEl = document.getElementById('heroIndex');
+    if (heroIndexEl) heroIndexEl.textContent = String(current + 1).padStart(2, '0');
+    if (prev !== current) { slider.dispatchEvent(new CustomEvent('slidechange', { detail: { from: prev, to: current } })); }
   }
 
   function next() { goTo(current + 1); }
@@ -180,55 +185,31 @@ function initHeroSlider() {
   function startAutoplay() {
     stopAutoplay();
     if (!paused && slides.length > 1) {
-      timer = setInterval(() => {
-        if (!paused) next();
-      }, INTERVAL);
+      timer = setInterval(() => { if (!paused) next(); }, INTERVAL);
     }
   }
-
-  function stopAutoplay() {
-    if (timer) {
-      clearInterval(timer);
-      timer = null;
-    }
-  }
+  function stopAutoplay() { if (timer) { clearInterval(timer); timer = null; } }
 
   function initPagination() {
     if (!pagination) return;
     pagination.innerHTML = slides.map((_, i) =>
       `<button class="hero-dot${i === 0 ? ' active' : ''}" data-index="${i}" aria-label="Слайд ${i + 1}"></button>`
     ).join('');
-
     pagination.addEventListener('click', e => {
       const dot = e.target.closest('.hero-dot');
       if (!dot) return;
       const idx = parseInt(dot.dataset.index, 10);
-      if (!isNaN(idx)) {
-        goTo(idx);
-        startAutoplay();
-      }
+      if (!isNaN(idx)) { goTo(idx); startAutoplay(); }
     });
   }
 
-  // Arrow buttons
-  if (prevBtn) {
-    prevBtn.addEventListener('click', () => { prev(); startAutoplay(); });
-  }
-  if (nextBtn) {
-    nextBtn.addEventListener('click', () => { next(); startAutoplay(); });
-  }
+  if (prevBtn) prevBtn.addEventListener('click', () => { prev(); startAutoplay(); });
+  if (nextBtn) nextBtn.addEventListener('click', () => { next(); startAutoplay(); });
 
-  // Pause on hover
-  slider.addEventListener('mouseenter', () => {
-    paused = true;
-    stopAutoplay();
-  });
-  slider.addEventListener('mouseleave', () => {
-    paused = false;
-    startAutoplay();
-  });
+  slider.addEventListener('mouseenter', () => { paused = true; stopAutoplay(); });
+  slider.addEventListener('mouseleave', () => { paused = false; startAutoplay(); });
 
-  // Touch / swipe support
+  // Touch / swipe
   slider.addEventListener('touchstart', e => {
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
@@ -239,53 +220,52 @@ function initHeroSlider() {
   slider.addEventListener('touchmove', e => {
     const dx = e.touches[0].clientX - touchStartX;
     const dy = e.touches[0].clientY - touchStartY;
-    if (!isSwiping && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
-      isSwiping = true;
-    }
-    if (isSwiping) {
-      e.preventDefault();
-    }
+    if (!isSwiping && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) isSwiping = true;
+    if (isSwiping) e.preventDefault();
   }, { passive: false });
 
   slider.addEventListener('touchend', e => {
-    if (!isSwiping) {
-      startAutoplay();
-      return;
-    }
+    if (!isSwiping) { startAutoplay(); return; }
     const dx = e.changedTouches[0].clientX - touchStartX;
-    if (Math.abs(dx) > 50) {
-      if (dx < 0) next();
-      else prev();
-    }
+    if (Math.abs(dx) > 50) { if (dx < 0) next(); else prev(); }
     startAutoplay();
   }, { passive: true });
 
-  // Keyboard navigation
+  // Keyboard
   slider.setAttribute('tabindex', '0');
   slider.addEventListener('keydown', e => {
     if (e.key === 'ArrowLeft') { prev(); startAutoplay(); }
     if (e.key === 'ArrowRight') { next(); startAutoplay(); }
   });
 
-  // Pause when page not visible
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-      stopAutoplay();
-    } else if (!paused) {
-      startAutoplay();
-    }
+    if (document.hidden) stopAutoplay();
+    else if (!paused) startAutoplay();
   });
 
-  // Build
+  // Hero parallax — whole cover drifts slightly slower than the page
+  function heroParallax() {
+    const hero = track.closest('.hero-slider');
+    if (!hero || reduceMotion()) return;
+    const r = hero.getBoundingClientRect();
+    if (r.bottom < 0 || r.top > innerHeight) return;
+    const drift = Math.min(Math.max(-r.top, 0), 170);
+    track.style.transform = 'translateY(' + drift * 0.28 + 'px)';
+  }
+
   async function build() {
     const banners = await loadBanners();
-    if (banners.length === 0) {
-      renderFallback();
-      return;
+    const hasImagery = Array.isArray(banners) && banners.some(b => b.image_url || b.image || b.cover);
+    if (!hasImagery) {
+      slides = FALLBACK_SLIDES;
+    } else {
+      slideLoop: {
+        slides = banners;
+      }
     }
-
-    slides = banners;
-    track.innerHTML = banners.map((b, i) => renderSlide(b, i)).join('');
+    track.innerHTML = slides.length === 0
+      ? renderFallbackSlide(FALLBACK_SLIDES[0], 0)
+      : slides.map((b, i) => renderSlide(b, i)).join('');
 
     if (slides.length <= 1) {
       if (prevBtn) prevBtn.style.display = 'none';
@@ -295,35 +275,88 @@ function initHeroSlider() {
       initPagination();
       startAutoplay();
     }
+    track.closest('.hero-slider').classList.add('ready');
   }
 
   build();
+  window.__heroParallax = heroParallax;
 }
 
 /* ============================================
-   SCROLL REVEAL
+   PARALLAX ON SCROLL — media depth shift
    ============================================ */
-function observe() {
-  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); }), { threshold: .12 });
-  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'));
+let parTicking = false;
+function runParallax() {
+  if (parTicking) return;
+  parTicking = true;
+  requestAnimationFrame(() => {
+    parTicking = false;
+    if (window.__heroParallax) window.__heroParallax();
+    if (reduceMotion()) return;
+    const scY = window.scrollY;
+    $$('.parallax-media').forEach(p => {
+      const r = p.getBoundingClientRect();
+      if (r.bottom < -60 || r.top > innerHeight + 60) return;
+      const rel = (r.top + r.height / 2) - innerHeight / 2;
+      const speed = parseFloat(p.dataset.speed || '0.16');
+      const img = p.querySelector('img');
+      if (img) {
+        img.style.transform = 'translateY(' + (rel * speed * -1) + 'px)';
+      }
+    });
+  });
+}
+if (window.__heroParallax || $$('.parallax-media').length) {
+  window.addEventListener('scroll', runParallax, { passive: true });
+  runParallax();
 }
 
-/* ---- Hero 3D Tilt ---- */
-let ticking = false;
-const hero = $('#hero3d');
-if (hero) window.addEventListener('mousemove', e => {
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  if (ticking) return;
-  ticking = true;
-  requestAnimationFrame(() => {
-    const r = hero.getBoundingClientRect();
-    const x = (e.clientX - r.left) / r.width - .5;
-    const y = (e.clientY - r.top) / r.height - .5;
-    hero.style.transform = `perspective(900px) rotateY(${x * 4}deg) rotateX(${-y * 4}deg)`;
-    ticking = false;
+/* ============================================
+   SCROLL REVEAL — staggered, slow cinema
+   ============================================ */
+function observe() {
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    // Stagger within the parent so grids breathe one card at a time.
+    let d = 0;
+    const parent = e.target.parentElement;
+    if (parent && !e.target.classList.contains('reveal-solo')) {
+      const idx = Array.prototype.indexOf.call(parent.children, e.target);
+      d = Math.min(Math.max(idx, 0), 8) * 90;
+    } else if (e.target.dataset.delay) {
+      d = parseInt(e.target.dataset.delay, 10) || 0;
+    }
+    setTimeout(() => e.target.classList.add('in'), d);
+    io.unobserve(e.target);
+  }), { threshold: .14 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+  if (reduceMotion()) document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'));
+}
+
+/* ============================================
+   CARD TILT — gentle 3D depth on hover
+   ============================================ */
+function initTilt() {
+  if (reduceMotion() || !matchMedia('(hover:hover) and (pointer:fine)').matches) return;
+  $$('.tilt').forEach(el => {
+    let raf = null;
+    el.addEventListener('mousemove', e => {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const r = el.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width - .5;
+        const y = (e.clientY - r.top) / r.height - .5;
+        el.style.transform = `perspective(950px) rotateY(${x * 3.5}deg) rotateX(${-y * 3.5}deg) translateY(-7px)`;
+      });
+    });
+    el.addEventListener('mouseleave', () => {
+      if (raf) cancelAnimationFrame(raf);
+      el.style.transition = 'transform .8s var(--ease-out)';
+      el.style.transform = '';
+      setTimeout(() => { el.style.transition = ''; }, 820);
+    });
   });
-});
+}
 
 /* ---- Lead Form ---- */
 async function submitLead(e) {
@@ -335,12 +368,8 @@ async function submitLead(e) {
   try {
     const r = await fetch('/api/v1/leads-public', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const j = await r.json();
-    if (r.ok) {
-      toast('Спасибо! Свяжемся в ближайшее время.', 'success');
-      e.target.reset();
-    } else {
-      toast(j.error || 'Ошибка отправки', 'error');
-    }
+    if (r.ok) { toast('Спасибо! Свяжемся в ближайшее время.', 'success'); e.target.reset(); }
+    else toast(j.error || 'Ошибка отправки', 'error');
   } catch (err) {
     toast('Ошибка сети. Попробуйте позже.', 'error');
   }
@@ -350,3 +379,4 @@ window.submitLead = submitLead;
 
 observe();
 initHeroSlider();
+initTilt();

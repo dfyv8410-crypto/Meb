@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="1024" viewBox="0 0 820 1024" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="base" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4E3826"/>
+      <stop offset="55%" stop-color="#3A2919"/>
+      <stop offset="100%" stop-color="#241810"/>
+    </linearGradient>
+    <linearGradient id="plank" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5C4329"/>
+      <stop offset="50%" stop-color="#4A3420"/>
+      <stop offset="100%" stop-color="#332413"/>
+    </linearGradient>
+    <radialGradient id="lamp" cx="46%" cy="30%" r="85%">
+      <stop offset="0%" stop-color="#8A6B42" stop-opacity=".5"/>
+      <stop offset="55%" stop-color="#3A2919" stop-opacity=".18"/>
+      <stop offset="100%" stop-color="#141210" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000" stop-opacity=".55"/>
+    </linearGradient>
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.35 0.012" numOctaves="3" stitchTiles="stitch"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.28 0 0 0 0 0.19 0 0 0 0 0.10 0 0 0 0.55 0"/>
+      <feBlend mode="multiply" in="SourceGraphic"/>
+    </filter>
+  </defs>
+
+  <rect width="820" height="1024" fill="url(#base)"/>
+  <rect width="820" height="1024" fill="url(#lamp)"/>
+
+  <g>
+    <rect x="30"  y="0" width="120" height="1024" fill="url(#plank)"/>
+    <rect x="168" y="0" width="150" height="1024" fill="url(#plank)" opacity=".94"/>
+    <rect x="336" y="0" width="118" height="1024" fill="url(#plank)"/>
+    <rect x="472" y="0" width="160" height="1024" fill="url(#plank)" opacity=".9"/>
+    <rect x="650" y="0" width="140" height="1024" fill="url(#plank)"/>
+  </g>
+
+  <g stroke="#2A1E12" stroke-width="3" opacity=".8">
+    <line x1="150" y1="0" x2="150" y2="1024"/>
+    <line x1="318" y1="0" x2="318" y2="1024"/>
+    <line x1="454" y1="0" x2="454" y2="1024"/>
+    <line x1="632" y1="0" x2="632" y2="1024"/>
+  </g>
+
+  <g stroke="#6B4E2F" stroke-width="1.4" fill="none" opacity=".5">
+    <path d="M60 120 C90 130 100 150 90 190"/>
+    <path d="M200 90 C240 100 250 130 235 180"/>
+    <path d="M400 160 C445 170 452 205 440 260"/>
+    <path d="M540 70 C590 84 600 120 588 180"/>
+    <path d="M700 150 C726 160 730 190 720 230"/>
+    <path d="M40 420 C80 434 96 470 84 530"/>
+    <path d="M210 480 C255 492 262 530 250 580"/>
+    <path d="M370 430 C420 444 428 486 416 548"/>
+    <path d="M520 500 C566 512 572 552 560 610"/>
+    <path d="M690 440 C714 452 720 480 712 520"/>
+    <path d="M80 760 C120 772 130 810 118 870"/>
+    <path d="M240 820 C286 830 294 868 282 930"/>
+    <path d="M400 740 C446 752 454 792 442 850"/>
+    <path d="M550 800 C592 810 600 848 590 905"/>
+    <path d="M700 780 C724 790 730 820 722 862"/>
+  </g>
+
+  <g fill="#2A1E12" opacity=".55">
+    <circle cx="96" cy="1010" r="16"/><circle cx="412" cy="1008" r="16"/>
+    <circle cx="700" cy="1010" r="16"/>
+  </g>
+
+  <rect width="820" height="1024" fill="url(#grain)"/>
+  <rect width="820" height="1024" fill="url(#edge)"/>
+</svg>
