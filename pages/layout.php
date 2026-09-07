@@ -242,12 +242,13 @@ function layout_footer(): void
     $s = site_settings();
     $siteName = $s['siteName'] ?? 'MEB';
     $logo = $s['logo'] ?? '';
-    $copyright = $s['copyright'] ?? '© 2026 — Премиальная мебель';
+    $tagline = $s['tagline'] ?? 'Индивидуальная мебель';
     $socials = $s['socials'] ?? [];
     $phone = $s['phone'] ?? '';
     $email = $s['email'] ?? '';
     $address = $s['address'] ?? '';
     $hours = $s['hours'] ?? '';
+    $year = date('Y');
 
     $socialLinks = '';
     if (!empty($socials['instagram'])) $socialLinks .= '<a href="' . e($socials['instagram']) . '" target="_blank" rel="noopener">Instagram</a>';
@@ -256,18 +257,14 @@ function layout_footer(): void
     if (!empty($socials['vk'])) $socialLinks .= '<a href="' . e($socials['vk']) . '" target="_blank" rel="noopener">VK</a>';
     if (!empty($socials['youtube'])) $socialLinks .= '<a href="' . e($socials['youtube']) . '" target="_blank" rel="noopener">YouTube</a>';
 
-    echo '<footer class="footer"><div class="container">
-  <div class="footer-grid">
-    <div class="footer-brand">
-      <a class="logo" href="/"><span class="logo-mark" aria-hidden="true"></span>';
-    echo str_replace('<img ', '<img style="height:40px" ', logo_mark($logo, $siteName));
-    echo '</a>
-      <p class="footer-tagline">Мебель, созданная<br>с вниманием к деталям.</p>
-      <p class="footer-copy">Кухни, гардеробные, гостиные. Проектирование, производство и монтаж под ключ.</p>';
-    if ($socialLinks !== '') {
-        echo '<div class="footer-social">' . $socialLinks . '</div>';
-    }
-    echo '</div>';
+    $ar = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+
+    // Navigation — real existing routes only (no invented links).
+    $navRows = '<a href="/catalog">Каталог</a>'
+             . '<a href="/projects">Проекты</a>'
+             . '<a href="/services">О бренде</a>'
+             . '<a href="/services">Услуги</a>'
+             . '<a href="/contacts">Контакты</a>';
 
     $catRows = '';
     $fi = 0;
@@ -279,24 +276,33 @@ function layout_footer(): void
         $catRows .= '<a href="' . e('/catalog/' . $fslug) . '">' . e($ftitle) . '</a>';
     }
 
-    echo '<div class="footer-col">
-      <h4>Категории</h4>' . $catRows . '
+    echo '<footer class="footer"><div class="container">
+  <div class="footer-top">
+    <div>
+      <span class="footer-kicker">ГОДНАЯ МЕБЕЛЬ &middot; Студия и производство</span>
+      <p class="footer-statement">Предметы, которые<br>не требуют <em>объяснений.</em></p>
+      <p class="footer-statement-sub">Кухни, гардеробные, гостиные, кабинеты. Проектирование, производство и монтаж под ключ.</p>
+    </div>
+    <a class="footer-cta" href="/contacts"><span>Обсудить проект</span><span class="footer-cta-ar">' . $ar . '</span></a>
+  </div>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <a class="logo" href="/" aria-label="Годная мебель — на главную"><span class="logo-mark" aria-hidden="true"></span>';
+    echo str_replace('<img ', '<img style="height:40px" ', logo_mark($logo, 'ГОДНАЯ МЕБЕЛЬ'));
+    echo '</a>
+      <p class="footer-tagline">' . e($tagline) . '</p>';
+    if ($siteName !== '') {
+        echo '<p class="footer-copy">' . e($siteName) . ' — мебель на заказ с собственным производством.</p>';
+    }
+    if ($socialLinks !== '') {
+        echo '<div class="footer-social">' . $socialLinks . '</div>';
+    }
+    echo '</div>
+    <div class="footer-col">
+      <h4>Навигация</h4>' . $navRows . '
     </div>
     <div class="footer-col">
-      <h4>Навигация</h4>
-      <a href="/projects">Проекты</a>
-      <a href="/services">О бренде</a>
-      <a href="/services">Услуги</a>
-      <a href="/contacts">Контакты</a>
-      <a href="/sitemap.xml">Карта сайта</a>
-    </div>
-    <div class="footer-col">
-      <h4>Услуги</h4>
-      <a href="/services">Проектирование</a>
-      <a href="/services">Производство</a>
-      <a href="/services">Индивидуальные решения</a>
-      <a href="/services">Подбор материалов</a>
-      <a href="/catalog">Всё из каталога</a>
+      <h4>Категории</h4>' . ($catRows !== '' ? $catRows : '<a href="/catalog">Весь каталог</a>') . '
     </div>
     <div class="footer-col footer-col-contact">
       <h4>Контакты</h4>';
@@ -304,13 +310,12 @@ function layout_footer(): void
     if ($email) echo '<a href="mailto:' . e($email) . '">' . e($email) . '</a>';
     if ($address) echo '<span class="footer-contact-line">' . e($address) . '</span>';
     if ($hours) echo '<span class="footer-contact-line">' . e($hours) . '</span>';
-    echo '<a class="footer-cta" href="/contacts">Обсудить проект</a>
-    </div>
+    echo '</div>
   </div>
   <div class="footer-bottom">
-    <span>' . e($copyright) . '</span>
+    <span class="footer-bottom-brand">&copy; ' . e($s['copyright'] !== '' ? $s['copyright'] : ('ГОДНАЯ МЕБЕЛЬ &middot; ' . $year)) . '</span>
     <div class="footer-bottom-meta">
-      <a href="/contacts">Связаться</a>
+      <a href="/catalog">Каталог</a>
       <a href="/sitemap.xml">Карта сайта</a>
       <a href="/admin">Админ-панель</a>
     </div>

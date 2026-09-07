@@ -215,20 +215,57 @@ function meb_var_generate(string $src, int $w, int $h, string $fit, int $q): ?st
 }
 }
 
-/** Build a signed srcset string. */
+/**
+ * Parse a "w/h" or "w:h" aspect hint into [W, H]; defaults to 4/3.
+ */
+if (!function_exists('meb_img_ratio')) {
+function meb_img_ratio(?string $ratio): array
+{
+    if ($ratio !== null && preg_match('#^\s*(\d+)\s*(?::|/)\s*(\d+)\s*$#', $ratio, $m) && (int) $m[2] > 0) {
+        return [(int) $m[1], (int) $m[2]];
+    }
+    return [4, 3];
+}
+}
+
+/**
+ * Build a truthful signed srcset string.
+ *
+ * - Candidates are generated at the display aspect ratio ($ratio), not a
+ *   hardcoded 4/3 — so a 3/4 card gets 3/4 crops instead of an over-cropped
+ *   upscale of a 4/3 frame.
+ * - Candidate widths never exceed the source's natural width, and the largest
+ *   useful candidate is the original itself labelled with its REAL width —
+ *   the browser is never told "1920w" about a 1536px file.
+ * - SVG sources pass through untouched ("1x").
+ */
 if (!function_exists('meb_pic_srcset')) {
-function meb_pic_srcset(string $src, array $widths, string $fit = 'cover', int $q = 82): string
+function meb_pic_srcset(string $src, array $widths, string $fit = 'cover', int $q = 82, ?string $ratio = null): string
 {
     if (strtolower(pathinfo($src, PATHINFO_EXTENSION)) === 'svg') return $src . ' 1x';
+
+    $path = meb_img_source_path($src);
+    $naturalW = 0;
+    if ($path !== null && meb_img_ext_ok($path)) {
+        $info = @getimagesize($path);
+        if ($info !== false) $naturalW = (int) $info[0];
+    }
+    if ($naturalW <= 0) return $src . ' 1x';
+
+    [$rw, $rh] = meb_img_ratio($ratio);
     $parts = [];
     foreach ($widths as $w) {
-        $h = $fit === 'width' ? 0 : (int) round($w * 0.75);
-        $u = meb_var_url($src, (int) $w, (int) $h, $fit, $q);
-        $parts[(int) $w] = $u . ' ' . (int) $w . 'w';
+        $w = (int) $w;
+        if ($w > $naturalW) break;
+        $h = $fit === 'width' ? 0 : max(16, (int) round($w * $rh / $rw));
+        $u = meb_var_url($src, $w, $h, $fit, $q);
+        $parts[$w] = $u . ' ' . $w . 'w';
     }
     ksort($parts);
-    $urls = array_values(array_unique(array_map(function ($p) { return explode(' ', $p)[0]; }, $parts)));
-    if ($urls === [ $src ]) return $src . ' 1x';
+    // Honest ceiling: the source file at its real width.
+    if (!isset($parts[$naturalW])) {
+        $parts[$naturalW] = $src . ' ' . $naturalW . 'w';
+    }
     return implode(', ', $parts);
 }
 }
@@ -280,10 +317,29 @@ function meb_pic(string $src, string $alt, array $o = []): string
     $fit = $o['fit'] ?? 'cover';
     $q = (int) ($o['q'] ?? 82);
     $sizes = (string) ($o['sizes'] ?? '100vw');
+    $ratio = (string) ($o['ratio'] ?? ($h > 0 ? $w . '/' . $h : '4/3'));
     $cls = isset($o['class']) ? ' class="' . e($o['class']) . '"' : '';
     $loading = !empty($o['eager']) ? 'eager' : 'lazy';
-    $srcset = meb_pic_srcset($src, [320, 480, 640, 960, 1280, 1920], $fit, $q);
-    $out = '<img src="' . e($src) . '"' . $cls;
+
+    // Broken or empty sources degrade to the brand drawing — never a 404 icon
+    // or an empty slot (a possible "stripe" on a narrow screen).
+    if ($src === '' || meb_img_source_path($src) === null) {
+        $src = '/assets/img/placeholder.svg';
+    }
+
+    $isSvg = strtolower(pathinfo($src, PATHINFO_EXTENSION)) === 'svg';
+    if ($isSvg) {
+        $srcAttr = $src;
+        $srcset  = $src . ' 1x';
+    } else {
+        $variant = meb_var_url($src, $w, $h, $fit, $q);
+        // The real fallback is a sized variant — never the multi-MB original,
+        // so no browser downloads a 2MB PNG to fill a 300px slot.
+        $srcAttr = $variant !== $src ? $variant : $src;
+        $srcset  = meb_pic_srcset($src, [320, 480, 640, 960, 1280, 1920], $fit, $q, $ratio);
+    }
+
+    $out = '<img src="' . e($srcAttr) . '"' . $cls;
     $out .= ' srcset="' . e($srcset) . '"';
     $out .= ' sizes="' . e($sizes) . '"';
     $out .= ' alt="' . e($alt) . '"';

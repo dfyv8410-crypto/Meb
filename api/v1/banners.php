@@ -29,10 +29,11 @@ function handle_banners_public(): void
         return ($a['sort_order'] ?? 0) <=> ($b['sort_order'] ?? 0);
     });
     // Attach signed responsive srcset for the full-viewport hero image.
+    // 16/9 crops — the hero is a wide full-viewport cover, not a 4/3 frame.
     foreach ($active as &$b) {
         $img = (string) ($b['image_url'] ?? '');
         if ($img !== '' && strpos($img, '/') === 0) {
-            $b['srcset'] = meb_pic_srcset($img, [480, 768, 1280, 1920], 'cover', 82);
+            $b['srcset'] = meb_pic_srcset($img, [480, 768, 1280, 1920], 'cover', 82, '16/9');
         }
     }
     unset($b);
