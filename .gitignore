@@ -9,6 +9,8 @@ mobile-java/meb-admin-java.apk
 .env
 storage/server-error.log
 storage/error.log
+storage/error.log.bak-*
+storage/cache/
 config/app.php
 config/database.php
 uploads/media/*
