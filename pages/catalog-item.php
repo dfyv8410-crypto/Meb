@@ -38,7 +38,7 @@ if ($single) {
     echo '<main id="main-content"><article class="container section" style="padding-top:clamp(32px,6vw,64px)">';
     echo '<div class="breadcrumb"><a href="/catalog">Каталог</a> / <a href="/catalog/' . e($cat) . '">' . e($catRow['title'] ?? $cat) . '</a> / ' . e($single['title'] ?? '') . '</div>';
     echo '<h1 class="h2" style="margin:var(--sp-3) 0 var(--sp-6)">' . e($single['title'] ?? '') . '</h1>';
-    echo '<img class="detail-hero" src="' . e(first_image($single)) . '" alt="' . e($single['title'] ?? '') . '">';
+    echo meb_pic(first_image($single), (string) ($single['title'] ?? ''), ['class' => 'detail-hero', 'w' => 1600, 'h' => 900, 'fit' => 'cover', 'q' => 82, 'sizes' => '100vw']);
     if (!empty($single['description'])) echo '<div class="detail-content" style="margin-top:var(--sp-8)">' . nl2br(e($single['description'])) . '</div>';
     if (!empty($single['specs']) && is_array($single['specs'])) {
         echo '<h2 class="h3" style="margin-top:var(--sp-8)">Характеристики</h2><ul class="spec-list">';
@@ -64,7 +64,7 @@ echo '<div class="grid cols3">';
 if (!$items) echo '<div class="empty-state"><div class="empty-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" width="40" height="40"><rect x="4" y="4" width="16" height="16"/><path d="M4 10h16M10 4v16"/></svg></div><p>В категории пока пусто</p></div>';
 foreach ($items as $c) {
     echo '<a href="/catalog/' . e($cat) . '/' . e($c['slug'] ?? $c['id']) . '" class="card card-clean reveal img-reveal">';
-    echo '<div class="card-img-wrap"><img src="' . e(first_image($c)) . '" alt="' . e($c['title'] ?? '') . '" loading="lazy"></div>';
+    echo '<div class="card-img-wrap">' . meb_pic(first_image($c), (string) ($c['title'] ?? ''), ['w' => 640, 'h' => 480, 'fit' => 'cover', 'q' => 80, 'sizes' => '(min-width:1081px) 300px, (min-width:721px) 33vw, 100vw']) . '</div>';
     echo '<div class="card-body"><div class="card-title">' . e($c['title'] ?? 'Без названия') . '</div>';
     if (!empty($c['description'])) echo '<div class="card-desc">' . e(mb_strimwidth($c['description'], 0, 100, '...')) . '</div>';
     echo '</div></a>';

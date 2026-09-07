@@ -7,6 +7,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/crud.php';
+require_once __DIR__ . '/../../includes/image.php';
 
 /** Public: return active banners within date range, sorted by sort_order. */
 function handle_banners_public(): void
@@ -27,5 +28,13 @@ function handle_banners_public(): void
     usort($active, function ($a, $b) {
         return ($a['sort_order'] ?? 0) <=> ($b['sort_order'] ?? 0);
     });
+    // Attach signed responsive srcset for the full-viewport hero image.
+    foreach ($active as &$b) {
+        $img = (string) ($b['image_url'] ?? '');
+        if ($img !== '' && strpos($img, '/') === 0) {
+            $b['srcset'] = meb_pic_srcset($img, [480, 768, 1280, 1920], 'cover', 82);
+        }
+    }
+    unset($b);
     ok(array_values($active));
 }

@@ -24,7 +24,10 @@ layout_nav('projects');
         $img = first_image($p);
         $href = '/project/' . e($p['slug'] ?? $p['id']);
         echo '<a href="' . $href . '" class="card card-clean reveal img-reveal">';
-        echo '<div class="card-img-wrap"><img src="' . e($img) . '" alt="' . e($p['title'] ?? '') . '" loading="lazy"></div>';
+        echo '<div class="card-img-wrap">' . meb_pic($img, (string) ($p['title'] ?? ''), [
+          'w' => 960, 'h' => 720, 'fit' => 'cover', 'q' => 80,
+          'sizes' => '(min-width:1081px) 33vw, (min-width:721px) 50vw, 100vw',
+      ]) . '</div>';
         echo '<div class="card-body"><div class="eyebrow">' . e($p['category'] ?? 'Проект') . '</div>';
         echo '<div class="card-title">' . e($p['title'] ?? 'Без названия') . '</div>';
         if (!empty($p['description'])) echo '<div class="card-desc">' . e(mb_strimwidth($p['description'], 0, 100, '...')) . '</div>';

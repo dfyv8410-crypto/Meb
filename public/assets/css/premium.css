@@ -100,7 +100,7 @@
 
 /* ---- Reset ---- */
 *, *::before, *::after { box-sizing: border-box; margin: 0; }
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; min-height: 100%; }
 body {
   font-family: var(--ff-body);
   color: var(--ink-text);
@@ -112,7 +112,13 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
+/* page shell: main grows, footer pins to the bottom of short viewports */
+main { flex: 1 0 auto; }
+footer { flex-shrink: 0; }
 /* soft grain over the whole site — cheap, film-like */
 body::after {
   content: "";
@@ -669,7 +675,7 @@ body.menu-open { overflow: hidden; }
 .footer .logo { color: var(--warm-white); font-size: 1.6rem; }
 .footer .logo img { filter: drop-shadow(0 3px 14px rgba(0,0,0,.4)); }
 .footer-grid {
-  display: grid; grid-template-columns: 1.7fr 1fr 1fr; gap: clamp(28px, 4vw, 64px);
+  display: grid; grid-template-columns: 1.8fr 1fr 1fr 1fr 1.2fr; gap: clamp(28px, 3vw, 56px);
 }
 .footer-brand p { margin-top: var(--sp-4); max-width: 460px; }
 .footer-tagline {
@@ -692,9 +698,25 @@ body.menu-open { overflow: hidden; }
   font-family: var(--ff-body); font-size: var(--fs-xs); font-weight: 700;
   letter-spacing: .22em; text-transform: uppercase; color: var(--brass-soft);
   margin-bottom: var(--sp-5);
+  display: flex; align-items: center; gap: 10px;
 }
+.footer-col h4::after { content: ""; height: 1px; width: 26px; background: rgba(181,148,104,.4); }
 .footer-col a, .footer-contact-line { display: block; padding: 6px 0; color: var(--taupe); font-size: var(--fs-sm); transition: color .3s; }
 .footer-col a:hover { color: var(--warm-white); }
+.footer-col-contact h4::after { display: none; }
+.footer-phone {
+  font-size: 1.15rem; font-weight: 600; color: var(--warm-white) !important;
+  letter-spacing: .02em;
+}
+.footer-cta {
+  margin-top: var(--sp-5);
+  display: inline-flex; align-items: center; gap: 10px;
+  border: 1px solid rgba(181,148,104,.45); border-radius: 100px;
+  padding: 11px 22px;
+  font-size: var(--fs-xs); font-weight: 600; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--brass-soft); transition: all .4s var(--ease-out);
+}
+.footer-cta:hover { background: var(--brass-bg); border-color: var(--brass); color: var(--ink-void); transform: translateY(-2px); }
 .footer-bottom {
   margin-top: var(--sp-14);
   padding-top: var(--sp-6);
@@ -705,6 +727,16 @@ body.menu-open { overflow: hidden; }
 .footer-bottom-meta { display: flex; gap: var(--sp-6); }
 .footer-bottom a { color: var(--ash); }
 .footer-bottom a:hover { color: var(--brass-soft); }
+
+@media (max-width: 1080px) {
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: clamp(32px, 4vw, 48px); }
+  .footer-brand { grid-column: 1 / -1; }
+}
+@media (max-width: 560px) {
+  .footer-grid { grid-template-columns: 1fr; gap: var(--sp-7); }
+  .footer-brand { grid-column: auto; }
+  .footer-bottom { flex-direction: column; align-items: flex-start; }
+}
 
 /* ============================================================
    HERO — luxury cover

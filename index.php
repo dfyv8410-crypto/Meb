@@ -11,6 +11,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/includes/router.php';
+require_once __DIR__ . '/includes/image.php';
 
 security_headers();
 
@@ -36,6 +37,11 @@ if (strpos($uri, '/api/v1/') === 0 || $uri === '/api/v1') {
 // ---- SEO virtual files (handled before asset block so .xml/.txt don't 404) --
 if ($uri === '/sitemap.xml') { require __DIR__ . '/pages/sitemap.php'; exit; }
 if ($uri === '/robots.txt') { require __DIR__ . '/pages/robots.php'; exit; }
+
+// ---- Responsive image variants (signed on-demand resize) --------------
+if (strpos($uri, '/img/var/') === 0) {
+    meb_serve_variant_uri($uri);
+}
 
 // ---- Static asset / storage / uploads ----------------------------------
 $assetExtensions = ['html', 'css', 'js', 'json', 'svg', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'woff', 'woff2', 'ico', 'xml', 'txt'];

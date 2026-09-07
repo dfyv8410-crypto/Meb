@@ -6,6 +6,19 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../../includes/image.php';
+
+/** Map real MIME → canonical extension. */
+function media_ext_for_mime(string $mime): string
+{
+    $map = [
+        'image/jpeg' => 'jpg', 'image/pjpeg' => 'jpg', 'image/png' => 'png',
+        'image/gif' => 'gif', 'image/webp' => 'webp', 'image/svg+xml' => 'svg',
+        'image/avif' => 'avif', 'image/x-icon' => 'ico',
+    ];
+    return $map[$mime] ?? '';
+}
+
 function handle_media(string $M, array $seg): void
 {
     if ($M === 'GET') {
@@ -42,7 +55,16 @@ function handle_media(string $M, array $seg): void
         if ($raw === false || $raw === '') fail('Invalid data', 400);
         if (strlen($raw) > 15 * 1024 * 1024) fail('File too large', 400);
 
-        $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        // Real content sniff (never trust the client MIME or filename).
+        $sniffed = @finfo_buffer(finfo_open(FILEINFO_MIME_TYPE), $raw);
+        if (is_string($sniffed) && $sniffed !== '') $mime = $sniffed;
+        $ext = media_ext_for_mime(strtolower($mime));
+        if ($ext === '') {
+            // fall back to extension-based allow-list (legacy webp/ico uploads)
+            $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            if (!in_array($ext, ['jpg','jpeg','png','gif','webp','svg','avif','ico'], true)) fail('Unsupported type', 400);
+        }
+        if ($ext === 'jpg') $ext = 'jpeg';
         if (!in_array($ext, ['jpg','jpeg','png','gif','webp','svg','avif','ico'], true)) fail('Unsupported type', 400);
 
         $safeFolder = clean_folder((string) ($b['folder'] ?? ''));
@@ -52,6 +74,12 @@ function handle_media(string $M, array $seg): void
         $full = $dir . '/' . $storeName;
         if (@file_put_contents($full, $raw) === false) fail('Write failed', 500);
         @chmod($full, 0644);
+
+        // Cross-check: raster extensions must carry valid raster payloads.
+        if (in_array($ext, ['jpg','jpeg','png','gif','webp'], true) && @getimagesize($full) === false) {
+            @unlink($full);
+            fail('Not a valid image', 400);
+        }
 
         [$w, $h] = image_dims($full);
         $url = '/uploads' . ($safeFolder !== '' ? '/' . $safeFolder : '') . '/' . $storeName;
@@ -63,6 +91,14 @@ function handle_media(string $M, array $seg): void
         $st->execute([$id, $storeName, $filename, strlen($raw), $w, $h, $safeFolder,
                       sanitize((string)($b['alt'] ?? '')), $url, $mime, now_db(), now_db()]);
         audit_log('create', 'media', $id);
+        // Warm the responsive pipeline for common card + hero sizes.
+        if ($w >= 320) {
+            foreach ([[480,360],[640,480],[1280,720]] as $dim) {
+                try {
+                    meb_var_generate($full, (int) $dim[0], (int) $dim[1], 'cover', 82);
+                } catch (Throwable $t) { /* non-fatal */ }
+            }
+        }
         ok(find_row('media', $id));
     }
 

@@ -40,9 +40,13 @@ layout_nav('projects');
   </div>
 
   <div class="grid cols2" style="margin-top:var(--sp-6)">
-    <?php foreach ($gallery as $g): $src = is_array($g) ? ($g['url'] ?? '') : $g; ?>
+    <?php foreach ($gallery as $g): $src = is_array($g) ? ($g['url'] ?? '') : $g;
+      if ($src === '' || $src === '/assets/img/placeholder.svg') continue; ?>
       <div class="img-reveal">
-        <img src="<?= e($src) ?>" alt="<?= e($project['title'] ?? '') ?>" loading="lazy" style="width:100%;border-radius:var(--radius);aspect-ratio:16/9;object-fit:cover">
+        <?= meb_pic($src, (string) ($project['title'] ?? ''), [
+            'w' => 960, 'h' => 540, 'fit' => 'cover', 'q' => 80,
+            'class' => 'g-img', 'sizes' => '(min-width:721px) 50vw, 100vw',
+        ]) ?>
       </div>
     <?php endforeach; ?>
   </div>

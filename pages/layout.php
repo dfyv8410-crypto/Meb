@@ -6,6 +6,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../includes/router.php';
+require_once __DIR__ . '/../includes/image.php';
 require_once __DIR__ . '/../api/v1/crud.php';
 
 if (!function_exists('site_settings')) {
@@ -262,33 +263,56 @@ function layout_footer(): void
     echo str_replace('<img ', '<img style="height:40px" ', logo_mark($logo, $siteName));
     echo '</a>
       <p class="footer-tagline">Мебель, созданная<br>с вниманием к деталям.</p>
-      <p class="footer-copy">Кухни, гардеробные, гостиные. Ручная доводка и точность до миллиметра.</p>';
+      <p class="footer-copy">Кухни, гардеробные, гостиные. Проектирование, производство и монтаж под ключ.</p>';
     if ($socialLinks !== '') {
         echo '<div class="footer-social">' . $socialLinks . '</div>';
     }
-    echo '</div>
+    echo '</div>';
+
+    $catRows = '';
+    $fi = 0;
+    foreach (meb_nav_categories() as $fc) {
+        $fslug = is_array($fc) ? (string) ($fc['slug'] ?? '') : '';
+        $ftitle = is_array($fc) ? (string) ($fc['title'] ?? '') : '';
+        if ($fslug === '' || $ftitle === '' || $fi >= 6) continue;
+        $fi++;
+        $catRows .= '<a href="' . e('/catalog/' . $fslug) . '">' . e($ftitle) . '</a>';
+    }
+
+    echo '<div class="footer-col">
+      <h4>Категории</h4>' . $catRows . '
+    </div>
     <div class="footer-col">
       <h4>Навигация</h4>
-      <a href="/catalog">Каталог</a>
-      <a href="/catalog">Коллекции</a>
       <a href="/projects">Проекты</a>
       <a href="/services">О бренде</a>
       <a href="/services">Услуги</a>
       <a href="/contacts">Контакты</a>
-    </div>';
-    echo '<div class="footer-col">
+      <a href="/sitemap.xml">Карта сайта</a>
+    </div>
+    <div class="footer-col">
+      <h4>Услуги</h4>
+      <a href="/services">Проектирование</a>
+      <a href="/services">Производство</a>
+      <a href="/services">Индивидуальные решения</a>
+      <a href="/services">Подбор материалов</a>
+      <a href="/catalog">Всё из каталога</a>
+    </div>
+    <div class="footer-col footer-col-contact">
       <h4>Контакты</h4>';
-    if ($phone) echo '<a href="tel:' . e(preg_replace('/[^+0-9]/', '', $phone)) . '">' . e($phone) . '</a>';
+    if ($phone) echo '<a class="footer-phone" href="tel:' . e(preg_replace('/[^+0-9]/', '', $phone)) . '">' . e($phone) . '</a>';
     if ($email) echo '<a href="mailto:' . e($email) . '">' . e($email) . '</a>';
     if ($address) echo '<span class="footer-contact-line">' . e($address) . '</span>';
     if ($hours) echo '<span class="footer-contact-line">' . e($hours) . '</span>';
-    echo '</div>
+    echo '<a class="footer-cta" href="/contacts">Обсудить проект</a>
+    </div>
   </div>
   <div class="footer-bottom">
     <span>' . e($copyright) . '</span>
     <div class="footer-bottom-meta">
-      <a href="/admin">Админ-панель</a>
+      <a href="/contacts">Связаться</a>
       <a href="/sitemap.xml">Карта сайта</a>
+      <a href="/admin">Админ-панель</a>
     </div>
   </div>
 </div></footer>

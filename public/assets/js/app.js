@@ -216,10 +216,11 @@ function initHeroSlider() {
     </div>`;
 
     const isFirst = index === 0;
-    const loadingAttr = isFirst ? 'loading="eager"' : 'loading="lazy"';
+    const loadingAttr = isFirst ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"';
+    const sset = banner.srcset ? ` srcset="${esc(banner.srcset)}" sizes="100vw"` : '';
 
     return `<div class="hero-slide${isFirst ? ' active' : ''}" data-index="${index}">
-      <img class="hero-slide-img" src="${esc(img)}" alt="${esc(title)}" ${loadingAttr}>
+      <img class="hero-slide-img" src="${esc(img)}"${sset} alt="${esc(title)}" ${loadingAttr} decoding="async">
       <div class="hero-slide-overlay ${pos === 'center' ? 'center' : (pos === 'right' ? 'right' : 'left')}"></div>
       <div class="hero-slide-content ${posClass}">
         ${kicker ? '<div class="hero-slide-kicker">' + esc(kicker) + '</div>' : '<div class="hero-slide-kicker">Премиальная мебель на заказ</div>'}

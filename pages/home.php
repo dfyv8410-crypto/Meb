@@ -34,7 +34,10 @@ function card(array $row, string $url, array $fields): void {
     $img = first_image($row);
     $meta = $fields[0];
     echo '<a href="' . e($url) . '" class="card card-clean tilt reveal img-reveal">';
-    echo '<div class="card-img-wrap"><img src="' . e($img) . '" alt="' . e($row['title'] ?? '') . '" loading="lazy"></div>';
+    echo '<div class="card-img-wrap">' . meb_pic($img, (string) ($row['title'] ?? ''), [
+        'w' => 960, 'h' => 720, 'fit' => 'cover', 'q' => 80,
+        'sizes' => '(min-width:1081px) 33vw, (min-width:721px) 50vw, 100vw',
+    ]) . '</div>';
     echo '<div class="card-body">';
     echo '<div class="eyebrow">' . e($meta) . '</div>';
     echo '<div class="card-title">' . e($row['title'] ?? 'Без названия') . '</div>';
@@ -66,7 +69,7 @@ layout_nav('home', true);
 <?php if ($photoBandImg): ?>
 <section class="section-photo" aria-label="Интерьеры">
   <div class="parallax-media" data-speed="0.16">
-    <img src="<?= e($photoBandImg) ?>" alt="Интерьер из массива и камня" style="width:100%;height:100%;object-fit:cover">
+    <?= meb_pic($photoBandImg, 'Интерьер из массива и камня', ['w' => 1920, 'h' => 1080, 'fit' => 'cover', 'q' => 82, 'sizes' => '100vw']) ?>
   </div>
   <div class="section-photo-veil" aria-hidden="true"></div>
   <div class="section-photo-content">
@@ -187,7 +190,7 @@ layout_nav('home', true);
     <div class="h-scroll" style="margin-top:var(--sp-12)">
       <?php foreach (array_slice($materials, 0, 8) as $m): ?>
         <a href="/materials#m-<?= e($m['id']) ?>" class="card card-clean tilt reveal">
-          <div class="card-img-wrap"><img src="<?= e(first_image($m)) ?>" alt="<?= e($m['title'] ?? '') ?>" loading="lazy"></div>
+          <div class="card-img-wrap"><?= meb_pic(first_image($m), (string) ($m['title'] ?? ''), ['w' => 480, 'h' => 640, 'fit' => 'cover', 'q' => 80, 'sizes' => '(min-width:1081px) 300px, 40vw, 55vw']) ?></div>
           <div class="card-body">
             <div class="eyebrow"><?= e($m['type'] ?? 'Материал') ?></div>
             <div class="card-title"><?= e($m['title'] ?? 'Без названия') ?></div>
