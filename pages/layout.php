@@ -85,6 +85,60 @@ function logo_mark(string $logo, string $siteName): string
 }
 }
 
+/**
+ * Categories for the «Категории» showroom panel. Fed live from the CMS ;
+ * if the collection is unavailable, a static map of the seeded slugs is used.
+ */
+if (!function_exists('meb_nav_categories')) {
+function meb_nav_categories(): array
+{
+    $cats = [];
+    try {
+        $cats = collection_list('catalog_categories');
+        if (is_array($cats)) {
+            usort($cats, function ($a, $b) { return (int) ($a['sort'] ?? 0) <=> (int) ($b['sort'] ?? 0); });
+        }
+    } catch (\Throwable $e) {
+        $cats = [];
+    }
+    if (!is_array($cats) || count($cats) === 0) {
+        $cats = [
+            ['slug' => 'kukhni',   'title' => 'Кухни'],
+            ['slug' => 'garderob', 'title' => 'Гардеробные'],
+            ['slug' => 'gornye',   'title' => 'Гостиные'],
+            ['slug' => 'detskie',  'title' => 'Детские комнаты'],
+            ['slug' => 'vannie',   'title' => 'Ванные комнаты'],
+            ['slug' => 'mebel',    'title' => 'Мебель'],
+        ];
+    }
+    return $cats;
+}
+}
+
+/**
+ * Renders the typographic category list (<ul class="mega-list">) used by both
+ * the desktop showroom dropdown and the mobile accordion. Text only — no
+ * fabricated imagery, per the brand brief.
+ */
+if (!function_exists('meb_render_cats')) {
+function meb_render_cats(array $cats, string $ar, string $id = ''): string
+{
+    $out = '<ul class="mega-list"' . ($id !== '' ? ' id="' . e($id) . '"' : '') . '>';
+    $ci = 0;
+    foreach ($cats as $cat) {
+        $slug = is_array($cat) ? (string) ($cat['slug'] ?? '') : '';
+        $title = is_array($cat) ? (string) ($cat['title'] ?? '') : '';
+        if ($slug === '' || $title === '') { continue; }
+        $ci++;
+        $out .= '<li><a href="' . e('/catalog/' . $slug) . '"><span class="mega-n">' . sprintf('%02d', $ci)
+             . '</span><span class="mega-t">' . e($title) . '</span><span class="mega-ar">' . $ar . '</span></a></li>';
+    }
+    $out .= '<li class="mega-all"><a href="/catalog"><span class="mega-n">+</span><span class="mega-t">Весь каталог</span><span class="mega-ar">' . $ar . '</span></a></li>';
+    $out .= '</ul>';
+    return $out;
+}
+}
+
 if (!function_exists('layout_nav')) {
 function layout_nav(string $active = '', bool $darkTop = false): void
 {
@@ -92,49 +146,92 @@ function layout_nav(string $active = '', bool $darkTop = false): void
     $logo = $s['logo'] ?? '';
     $siteName = $s['siteName'] ?? 'MEB';
     $navCls = 'nav' . ($darkTop ? ' dark-top' : '');
+    $activeKey = in_array($active, ['catalog', 'projects', 'services', 'contacts'], true) ? $active : '';
+
+    $ar = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+
+    // Curated premium navigation — the five primary items from the brand brief.
+    // «О бренде» and «Услуги» share the existing /services route; only «Услуги»
+    // lights up as active there (a single indicator per destination).
+    $keys   = ['catalog', 'projects', 'brand', 'services', 'contacts'];
+    $labels = ['Категории', 'Проекты', 'О бренде', 'Услуги', 'Контакты'];
+    $drops  = [true, false, false, false, false];
+    $routes = ['/catalog', '/projects', '/services', '/services', '/contacts'];
+
+    $cats = meb_nav_categories();
+
     echo '<header class="' . $navCls . '" id="siteNav"><div class="container nav-inner">
-  <a class="logo" href="/"><span class="logo-mark" aria-hidden="true"></span>';
+  <a class="logo" href="/" aria-label="' . e($siteName) . ' — на главную"><span class="logo-mark" aria-hidden="true"></span>';
     echo logo_mark($logo, $siteName);
     echo '</a>
-  <nav class="nav-links" id="navLinks" aria-label="Основная навигация">';
+  <nav class="nav-links" id="navDesktop" aria-label="Основная навигация"><ul class="nav-menu">';
 
-    // Try dynamic menu first, fall back to static
-    $menuItems = [];
-    try {
-        $menuItems = collection_list('menu_items');
-        usort($menuItems, function ($a, $b) { return ($a['sort_order'] ?? 0) <=> ($b['sort_order'] ?? 0); });
-        $menuItems = array_filter($menuItems, function ($i) { return ($i['is_active'] ?? 1) == 1; });
-    } catch (\Throwable $e) {}
-
-    if (!empty($menuItems)) {
-        foreach ($menuItems as $item) {
-            $href = $item['url'] ?? '/';
-            $label = $item['title'] ?? '';
-            $cls = ($active !== '' && strpos($href, '/' . $active) === 0) ? ' active' : '';
-            echo '<a href="' . e($href) . '" class="' . $cls . '">' . e($label) . '</a>';
-        }
-    } else {
-        $items = [
-            ['/catalog', 'Каталог'],
-            ['/catalog', 'Коллекции'],
-            ['/projects', 'Проекты'],
-            ['/services', 'О бренде'],
-            ['/services', 'Услуги'],
-            ['/contacts', 'Контакты'],
-        ];
-        foreach ($items as [$href, $label]) {
-            $cls = ($active !== '' && strpos($href, '/' . $active) === 0) ? ' active' : '';
-            echo '<a href="' . $href . '" class="' . $cls . '">' . e($label) . '</a>';
+    foreach ($keys as $i => $key) {
+        $label = $labels[$i];
+        $drop = $drops[$i];
+        $route = $routes[$i];
+        $idx = sprintf('%02d', $i + 1);
+        $cls = 'nav-item' . ($drop ? ' drop' : '') . ($key === $activeKey ? ' active' : '');
+        if ($drop) {
+            echo '<li class="' . $cls . '">
+        <button type="button" class="nav-link nav-trigger" data-drop-trigger aria-haspopup="true" aria-expanded="false" aria-controls="megaCatalog">
+          <span class="nav-idx" aria-hidden="true">' . $idx . '</span><span class="nav-label">' . e($label) . '</span><span class="nav-arr" aria-hidden="true"></span>
+        </button>
+        <div class="mega" role="region" aria-label="Каталог — категории">
+          <div class="mega-inner">
+            <div class="mega-main">
+              <span class="kicker">Каталог студии</span>
+              <span class="mega-title">Showroom</span>
+              <p class="mega-lead">Проектирование и производство на заказ. Каждое направление решается под ваше пространство.</p>
+            </div>';
+            echo meb_render_cats($cats, $ar, 'megaCatalog');
+            echo '</div>
+        </div>
+      </li>';
+        } else {
+            echo '<li class="' . $cls . '"><a class="nav-link" href="' . e($route) . '"><span class="nav-idx" aria-hidden="true">' . $idx . '</span><span class="nav-label">' . e($label) . '</span></a></li>';
         }
     }
 
-    echo '<a class="btn btn-sm btn-ghost nav-overlay-cta" href="/contacts">Обсудить проект</a>';
-    echo '</nav>
+    echo '</ul></nav>
   <div class="nav-cta">
-    <a class="btn btn-sm btn-ghost desktop-only" href="/contacts">Обсудить проект</a>
-    <button class="burger" id="burger" aria-label="Меню" aria-expanded="false" aria-controls="navLinks"><span></span><span></span></button>
+    <a class="nav-cta-link desktop-only" href="/contacts"><span class="nav-label">Обсудить проект</span><span class="nav-ar">' . $ar . '</span></a>
+    <button class="burger" id="burger" aria-label="Открыть меню" aria-expanded="false" aria-controls="mobileMenu"><span></span><span></span></button>
   </div>
 </div></header>';
+
+    // Fullscreen mobile panel — body-level so it can be fixed-positioned
+    // independently of the glass capsule (a filtered ancestor would otherwise
+    // trap it to the header strip).
+    echo '<div class="mobile-panel" id="mobileMenu" role="dialog" aria-modal="true" aria-label="Меню">
+  <div class="mobile-panel-inner">
+    <ul class="mobile-menu">';
+
+    foreach ($keys as $i => $key) {
+        $label = $labels[$i];
+        $drop = $drops[$i];
+        $route = $routes[$i];
+        $idx = sprintf('%02d', $i + 1);
+        $cls = 'nav-item' . ($drop ? ' drop' : '') . ($key === $activeKey ? ' active' : '');
+        if ($drop) {
+            echo '<li class="' . $cls . '">
+        <button type="button" class="nav-link nav-trigger" data-drop-trigger aria-haspopup="true" aria-expanded="false" aria-controls="mobileCatalog">
+          <span class="nav-idx" aria-hidden="true">' . $idx . '</span><span class="nav-label">' . e($label) . '</span><span class="nav-arr" aria-hidden="true"></span>
+        </button>
+        <div class="mega" id="mobileCatalog">' . meb_render_cats($cats, $ar) . '</div>
+      </li>';
+        } else {
+            echo '<li class="' . $cls . '"><a class="nav-link" href="' . e($route) . '"><span class="nav-idx" aria-hidden="true">' . $idx . '</span><span class="nav-label">' . e($label) . '</span></a></li>';
+        }
+    }
+
+    echo '</ul>
+    <div class="mobile-panel__cta">
+      <a class="nav-cta-link" href="/contacts"><span class="nav-label">Обсудить проект</span><span class="nav-ar">' . $ar . '</span></a>
+      <span class="mobile-panel__code">MEB &middot; Showroom</span>
+    </div>
+  </div>
+</div>';
 }
 }
 

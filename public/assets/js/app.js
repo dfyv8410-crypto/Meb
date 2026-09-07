@@ -31,35 +31,116 @@ function arrowSVG() {
   return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
 }
 
-/* ---- Scroll Nav (dark glass + compact) ---- */
+/* ============================================
+   NAVIGATION — floating header, showroom panel,
+   fullscreen mobile menu
+   ============================================ */
 const siteNav = document.getElementById('siteNav');
+const burger = document.getElementById('burger');
+const mobileMenu = document.getElementById('mobileMenu');
+const isHoverable = matchMedia('(hover:hover) and (pointer:fine)').matches;
+
+/* ---- shrink-on-scroll: serene over hero → compact glass capsule ---- */
 if (siteNav) {
-  const body = document.body;
   const checkScroll = () => {
     const sc = window.scrollY > 24;
     siteNav.classList.toggle('scrolled', sc);
-    body.classList.toggle('nav-scrolled', sc);
+    document.body.classList.toggle('nav-scrolled', sc);
   };
   window.addEventListener('scroll', checkScroll, { passive: true });
   checkScroll();
 }
 
-/* ---- Mobile Menu (fullscreen overlay) ---- */
-const burger = document.getElementById('burger');
-const navLinksM = document.getElementById('navLinks');
-function setMenu(open) {
-  if (!navLinksM) return;
-  navLinksM.classList.toggle('open', open);
-  document.body.classList.toggle('menu-open', open);
-  if (burger) burger.setAttribute('aria-expanded', String(open));
+/* ---- «Категории» showroom dropdown ---- */
+function setDrop(item, open) {
+  if (!item) return;
+  item.classList.toggle('drop-open', open);
+  const btn = item.querySelector('.nav-trigger');
+  if (btn) btn.setAttribute('aria-expanded', String(open));
 }
-if (burger && navLinksM) {
-  burger.addEventListener('click', () => setMenu(!navLinksM.classList.contains('open')));
-  navLinksM.addEventListener('click', e => { if (e.target.closest('a')) setMenu(false); });
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && navLinksM.classList.contains('open')) setMenu(false);
+function toggleDrop(btn) {
+  if (!btn) return;
+  setDrop(btn.closest('.nav-item.drop'), !btn.closest('.nav-item.drop').classList.contains('drop-open'));
+}
+function closeDrops() {
+  document.querySelectorAll('.nav-item.drop.drop-open').forEach(it => setDrop(it, false));
+}
+
+document.querySelectorAll('.nav-item.drop').forEach(item => {
+  const btn = item.querySelector('.nav-trigger');
+  if (isHoverable) {
+    item.addEventListener('mouseenter', () => setDrop(item, true));
+    item.addEventListener('mouseleave', () => setDrop(item, false));
+    if (btn) {
+      btn.addEventListener('focus', () => setDrop(item, true));
+      btn.addEventListener('keydown', e => {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setDrop(item, true);
+          const first = item.querySelector('.mega a');
+          if (first) first.focus();
+        }
+      });
+    }
+  } else if (btn) {
+    btn.addEventListener('click', () => toggleDrop(btn));
+  }
+});
+
+/* close whenever the pointer or keyboard focus leaves the dropdown */
+document.addEventListener('click', e => {
+  if (e.target.closest('.nav-item.drop')) return;
+  closeDrops();
+});
+document.addEventListener('focusin', () => {
+  const inDrop = document.activeElement && document.activeElement.closest('.nav-item.drop');
+  if (!inDrop) closeDrops();
+});
+
+/* ---- fullscreen mobile menu (numbered premium panel) ---- */
+function setMenu(open) {
+  if (!mobileMenu) return;
+  mobileMenu.classList.toggle('open', open);
+  document.body.classList.toggle('menu-open', open);
+  if (burger) {
+    burger.setAttribute('aria-expanded', String(open));
+    burger.setAttribute('aria-label', open ? 'Закрыть меню' : 'Открыть меню');
+  }
+  if (open) {
+    closeDrops(); // fresh panel: accordions collapsed
+    const first = mobileMenu.querySelector('.nav-link, .nav-cta-link');
+    if (first) first.focus();
+  }
+}
+if (burger && mobileMenu) {
+  burger.addEventListener('click', () => setMenu(!mobileMenu.classList.contains('open')));
+  mobileMenu.addEventListener('click', e => {
+    if (e.target.closest('.nav-trigger')) return;
+    if (e.target.closest('a')) setMenu(false);
+  });
+  // light focus trap inside the open panel
+  mobileMenu.addEventListener('keydown', e => {
+    if (e.key !== 'Tab' || !mobileMenu.classList.contains('open')) return;
+    const focusables = [...mobileMenu.querySelectorAll('a, button')];
+    if (!focusables.length) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const activeEl = document.activeElement;
+    if (e.shiftKey && (activeEl === first || !mobileMenu.contains(activeEl))) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && (activeEl === last || !mobileMenu.contains(activeEl))) { e.preventDefault(); first.focus(); }
   });
 }
+
+/* Escape: close the panel first, then the dropdown */
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (mobileMenu && mobileMenu.classList.contains('open')) {
+    setMenu(false);
+    if (burger) burger.focus();
+  } else {
+    closeDrops();
+  }
+});
 
 /* ============================================
    HERO SLIDER — cinematic crossfade cover
