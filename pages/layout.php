@@ -313,7 +313,7 @@ function layout_footer(): void
     echo '</div>
   </div>
   <div class="footer-bottom">
-    <span class="footer-bottom-brand">&copy; ' . e($s['copyright'] !== '' ? $s['copyright'] : ('ГОДНАЯ МЕБЕЛЬ &middot; ' . $year)) . '</span>
+    <span class="footer-bottom-brand">&copy; ' . e(!empty($s['copyright']) ? $s['copyright'] : ('ГОДНАЯ МЕБЕЛЬ ' . "\u{00B7}" . ' ' . $year)) . '</span>
     <div class="footer-bottom-meta">
       <a href="/catalog">Каталог</a>
       <a href="/sitemap.xml">Карта сайта</a>
