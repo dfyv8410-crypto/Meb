@@ -44,9 +44,13 @@ if (strpos($uri, '/img/var/') === 0) {
 }
 
 // ---- Static asset / storage / uploads ----------------------------------
+// /admin/… paths are excluded: they belong to the admin SPA (admin/index.html
+// + admin/app.js), which is routed by serve_admin() further down. Serving them
+// through the public/ asset block would 404 on public/admin/app.js and prevent
+// the admin login page from loading its JS.
 $assetExtensions = ['html', 'css', 'js', 'json', 'svg', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'woff', 'woff2', 'ico', 'xml', 'txt'];
 $ext = strtolower(pathinfo($uri, PATHINFO_EXTENSION));
-if (in_array($ext, $assetExtensions, true)) {
+if (strpos($uri, '/admin') !== 0 && in_array($ext, $assetExtensions, true)) {
     serve_file(__DIR__ . '/public' . $uri);
     // if not found below, fall through to security check
 }
@@ -162,10 +166,23 @@ function serve_file(string $fullPath): void
 
 function serve_admin(): void
 {
-    $f = __DIR__ . '/admin/index.html';
+    // Serve the admin SPA: static assets from admin/ are returned with the
+    // right MIME type; any other /admin/… path falls back to index.html
+    // (client-side routing). Previously only index.html was served, so
+    // /admin/app.js 404'd and the login form could never submit.
+    $requestUri = parse_url($_SERVER['REQUEST_URI'] ?? '/admin/', PHP_URL_PATH) ?: '/admin/';
+    $f = __DIR__ . '/admin/' . ltrim(substr($requestUri, strlen('/admin')), '/');
     if (is_file($f)) {
-        header('Content-Type: text/html; charset=utf-8');
+        $map = ['html' => 'text/html; charset=utf-8', 'js' => 'application/javascript', 'css' => 'text/css', 'png' => 'image/png', 'jpg' => 'image/jpeg', 'svg' => 'image/svg+xml', 'ico' => 'image/x-icon', 'woff2' => 'font/woff2', 'json' => 'application/json'];
+        $ext = strtolower(pathinfo($f, PATHINFO_EXTENSION));
+        header('Content-Type: ' . ($map[$ext] ?? 'application/octet-stream'));
         readfile($f);
+        exit;
+    }
+    $index = __DIR__ . '/admin/index.html';
+    if (is_file($index)) {
+        header('Content-Type: text/html; charset=utf-8');
+        readfile($index);
         exit;
     }
     http_response_code(404); exit;
