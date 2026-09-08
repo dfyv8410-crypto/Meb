@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="bgBed" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#221D18"/>
+      <stop offset="55%" stop-color="#161310"/>
+      <stop offset="100%" stop-color="#100E0C"/>
+    </linearGradient>
+    <radialGradient id="edgeLight" cx="78%" cy="46%" r="60%">
+      <stop offset="0%" stop-color="#8A6B42" stop-opacity=".32"/>
+      <stop offset="55%" stop-color="#4A3420" stop-opacity=".12"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="bedBase" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#332C24"/>
+      <stop offset="100%" stop-color="#1E1914"/>
+    </linearGradient>
+    <filter id="grainBed">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.05"/></feComponentTransfer>
+      <feComposite operator="over" in2="SourceGraphic"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#bgBed)"/>
+  <rect width="1600" height="900" fill="url(#edgeLight)"/>
+
+  <!-- headboard -->
+  <rect x="180" y="470" width="1240" height="330" rx="6" fill="#241E18"/>
+  <path d="M220 470 L220 800 L180 800 L180 510 C180 486 198 470 220 470 Z" fill="#2C251D"/>
+  <path d="M1380 470 L1380 800 L1420 800 L1420 510 C1420 486 1402 470 1380 470 Z" fill="#2C251D"/>
+
+  <!-- mattress -->
+  <path d="M200 470 C200 452 216 442 240 440 L1360 440 C1384 442 1400 452 1400 470 L1400 520 L200 520 Z" fill="url(#bedBase)"/>
+  <rect x="200" y="520" width="1200" height="46" rx="4" fill="#191512"/>
+
+  <!-- duvet detail -->
+  <path d="M260 470 L260 566 L1340 566 L1340 470 L1280 470 L1280 500 L320 500 L320 470 Z" fill="#2A241D"/>
+
+  <!-- pillows -->
+  <g>
+    <rect x="300" y="400" width="170" height="86" rx="10" fill="#3A3026" transform="rotate(-4 385 443)"/>
+    <rect x="470" y="396" width="170" height="86" rx="10" fill="#453A2C" transform="rotate(5 555 439)"/>
+  </g>
+
+  <!-- floor -->
+  <rect y="600" width="1600" height="300" fill="#0E0C0B"/>
+  <rect y="600" width="1600" height="6" fill="#4A3420" opacity=".4"/>
+
+  <!-- bedside lamp glow -->
+  <circle cx="1230" cy="600" r="150" fill="#E8C98F" opacity=".16"/>
+  <g transform="translate(1192 470)">
+    <rect x="0" y="0" width="74" height="74" rx="4" fill="#171310"/>
+    <rect x="0" y="0" width="74" height="74" rx="4" fill="none" stroke="#8A6B42" stroke-width="2" opacity=".8"/>
+    <line x1="37" y1="74" x2="37" y2="160" stroke="#1B1814" stroke-width="6"/>
+    <rect x="20" y="160" width="34" height="9" rx="2" fill="#1B1814"/>
+  </g>
+
+  <!-- wall art -->
+  <rect x="620" y="230" width="210" height="150" fill="#1C1813" stroke="#8A6B42" stroke-opacity=".35" stroke-width="2"/>
+  <path d="M650 360 L710 300 L740 330 L770 290 L810 350 Z" fill="#6E5236" opacity=".6"/>
+
+  <rect width="1600" height="900" fill="url(#grainBed)" opacity=".5"/>
+</svg>

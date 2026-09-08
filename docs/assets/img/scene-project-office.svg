@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2F2A25"/>
+      <stop offset="100%" stop-color="#131110"/>
+    </linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#40382E"/>
+      <stop offset="100%" stop-color="#100E0C"/>
+    </linearGradient>
+    <linearGradient id="table" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#6E5A41"/>
+      <stop offset="100%" stop-color="#2E2416"/>
+    </linearGradient>
+    <linearGradient id="chair" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3B342B"/>
+      <stop offset="100%" stop-color="#1B1713"/>
+    </linearGradient>
+    <radialGradient id="lamp" cx="50%" cy="26%" r="85%">
+      <stop offset="0%" stop-color="#EFD3A0" stop-opacity=".4"/>
+      <stop offset="50%" stop-color="#C49554" stop-opacity=".1"/>
+      <stop offset="100%" stop-color="#171412" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.05"/></feComponentTransfer>
+      <feComposite operator="over" in2="SourceGraphic"/>
+    </filter>
+    <linearGradient id="board" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1E1A16"/>
+      <stop offset="100%" stop-color="#141210"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="1000" fill="#131110"/>
+  <rect width="1600" height="1000" fill="url(#lamp)"/>
+  <rect y="660" width="1600" height="340" fill="url(#floor)"/>
+
+  <!-- presentation wall -->
+  <g>
+    <rect x="180" y="140" width="1240" height="340" rx="8" fill="url(#board)" stroke="#C9A05F" stroke-opacity=".3" stroke-width="2"/>
+    <g stroke="#3A312A" stroke-width="3">
+      <line x1="260" y1="170" x2="1180" y2="170"/>
+      <line x1="260" y1="360" x2="1180" y2="360"/>
+    </g>
+    <g stroke="#C9A05F" stroke-opacity=".5" stroke-width="2" stroke-dasharray="6 8">
+      <line x1="300" y1="150" x2="1140" y2="150"/>
+      <line x1="300" y1="150" x2="400" y2="330"/>
+      <line x1="1140" y1="150" x2="950" y2="320"/>
+    </g>
+    <ellipse cx="720" cy="330" rx="230" ry="70" fill="#3A312A" stroke="#C9A05F" stroke-opacity=".35"/>
+  </g>
+
+  <!-- long boardroom table -->
+  <g transform="translate(400 620)">
+    <rect x="0" y="0" width="800" height="42" rx="6" fill="url(#table)"/>
+    <rect x="0" y="0" width="800" height="42" rx="6" fill="none" stroke="#C9A05F" stroke-opacity=".4" stroke-width="2"/>
+    <g stroke="#191512" stroke-width="14">
+      <line x1="80"  y1="42" x2="80"  y2="130"/>
+      <line x1="720" y1="42" x2="720" y2="130"/>
+      <line x1="400" y1="42" x2="400" y2="130"/>
+    </g>
+    <ellipse cx="400" cy="140" rx="430" ry="20" fill="#000" opacity=".6"/>
+  </g>
+
+  <!-- chairs -->
+  <g fill="url(#chair)">
+    <g transform="translate(520 720)">
+      <rect x="0" y="28" width="90" height="70" rx="10"/>
+      <rect x="70" y="0" width="14" height="98" rx="4"/>
+      <rect x="8" y="0" width="14" height="98" rx="4"/>
+    </g>
+    <g transform="translate(760 720)">
+      <rect x="0" y="28" width="90" height="70" rx="10"/>
+      <rect x="70" y="0" width="14" height="98" rx="4"/>
+      <rect x="8" y="0" width="14" height="98" rx="4"/>
+    </g>
+    <g transform="translate(930 720)">
+      <rect x="0" y="28" width="90" height="70" rx="10"/>
+      <rect x="70" y="0" width="14" height="98" rx="4"/>
+      <rect x="8" y="0" width="14" height="98" rx="4"/>
+    </g>
+    <g transform="translate(530 620) rotate(180)">
+      <rect x="0" y="28" width="90" height="70" rx="10"/>
+      <rect x="70" y="0" width="14" height="98" rx="4"/>
+      <rect x="8" y="0" width="14" height="98" rx="4"/>
+    </g>
+  </g>
+
+  <g transform="translate(1430 180)">
+    <line x1="0" y1="0" x2="0" y2="520" stroke="#16130F" stroke-width="4"/>
+    <path d="M-20 0 L-34 26 L34 26 L20 0 Z" fill="#C9A05F"/>
+    <circle cx="0" cy="0" r="90" fill="#EFD3A0" opacity=".18"/>
+  </g>
+
+  <rect width="1600" height="1000" fill="url(#grain)" opacity=".5"/>
+</svg>

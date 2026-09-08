@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3E342A"/>
+      <stop offset="100%" stop-color="#181512"/>
+    </linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4A3420"/>
+      <stop offset="100%" stop-color="#12100D"/>
+    </linearGradient>
+    <linearGradient id="sof" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4A4135"/>
+      <stop offset="100%" stop-color="#241F19"/>
+    </linearGradient>
+    <radialGradient id="lamp" cx="50%" cy="40%" r="80%">
+      <stop offset="0%" stop-color="#F0CE8E" stop-opacity=".5"/>
+      <stop offset="55%" stop-color="#C49554" stop-opacity=".12"/>
+      <stop offset="100%" stop-color="#171412" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="pendant" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#EFD3A0" stop-opacity=".4"/>
+      <stop offset="70%" stop-color="#E0BC7C" stop-opacity=".06"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.05"/></feComponentTransfer>
+      <feComposite operator="over" in2="SourceGraphic"/>
+    </filter>
+    <linearGradient id="slat" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5C4329"/>
+      <stop offset="100%" stop-color="#332413"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1600" height="1000" fill="#171412"/>
+  <rect width="1600" height="1000" fill="url(#lamp)"/>
+  <rect y="700" width="1600" height="300" fill="url(#floor)"/>
+
+  <!-- wood slat wall -->
+  <g>
+    <rect x="0" y="120" width="570" height="580" fill="url(#slat)"/>
+    <g stroke="#241811" stroke-width="3" opacity=".85">
+      <line x1="70"  y1="120" x2="70"  y2="700"/>
+      <line x1="160" y1="120" x2="160" y2="700"/>
+      <line x1="250" y1="120" x2="250" y2="700"/>
+      <line x1="340" y1="120" x2="340" y2="700"/>
+      <line x1="430" y1="120" x2="430" y2="700"/>
+      <line x1="520" y1="120" x2="520" y2="700"/>
+    </g>
+  </g>
+
+  <g transform="translate(760 470)">
+    <path d="M0 150 C0 104 30 76 86 70 L86 44 C86 28 100 14 118 14 L470 14 C488 14 502 28 502 44 L502 70 C558 76 588 104 588 150 L588 180 L0 180 Z" fill="url(#sof)"/>
+    <path d="M86 70 L86 44 C86 28 100 14 118 14 L470 14 C488 14 502 28 502 44 L502 70" fill="none" stroke="#5A4F3F" stroke-width="2"/>
+    <rect x="0" y="180" width="588" height="18" fill="#1B1713"/>
+    <path d="M118 244 L126 180 M462 244 L454 180" stroke="#2E2720" stroke-width="11" stroke-linecap="round"/>
+    <path d="M30 96 L76 80 L76 180 L30 180 Z" fill="#2B251E"/>
+    <path d="M512 96 L558 80 L558 180 L512 180 Z" fill="#2B251E"/>
+    <ellipse cx="294" cy="198" rx="290" ry="16" fill="#000" opacity=".45"/>
+    <g fill="#6E5C44">
+      <rect x="150" y="52" width="60" height="6" rx="3" opacity=".45"/>
+      <rect x="150" y="64" width="40" height="6" rx="3" opacity=".3"/>
+    </g>
+  </g>
+
+  <g>
+    <line x1="300" y1="0" x2="300" y2="120" stroke="#141210" stroke-width="3"/>
+    <path d="M252 118 L348 118 L330 150 L270 150 Z" fill="#B98A4E"/>
+    <circle cx="300" cy="158" r="70" fill="url(#pendant)"/>
+  </g>
+
+  <g transform="translate(1330 620)">
+    <line x1="0" y1="0" x2="0" y2="150" stroke="#181512" stroke-width="26" stroke-linecap="round"/>
+    <circle cx="0" cy="150" r="44" fill="url(#lamp)" opacity=".6"/>
+    <ellipse cx="0" cy="186" rx="76" ry="16" fill="#000" opacity=".4"/>
+  </g>
+
+  <rect width="1600" height="1000" fill="url(#grain)" opacity=".5"/>
+</svg>

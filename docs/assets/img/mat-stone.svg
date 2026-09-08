@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="1024" viewBox="0 0 820 1024" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="base" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#DED4C4"/>
+      <stop offset="50%" stop-color="#CBC0AE"/>
+      <stop offset="100%" stop-color="#B0A48F"/>
+    </linearGradient>
+    <linearGradient id="lay" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E8DFD1" stop-opacity=".8"/>
+      <stop offset="100%" stop-color="#C9BEA9" stop-opacity=".2"/>
+    </linearGradient>
+    <radialGradient id="lamp" cx="42%" cy="26%" r="90%">
+      <stop offset="0%" stop-color="#F5ECDD" stop-opacity=".75"/>
+      <stop offset="45%" stop-color="#D9CDB8" stop-opacity=".25"/>
+      <stop offset="100%" stop-color="#6A5F4C" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#141210" stop-opacity="0"/>
+      <stop offset="82%" stop-color="#181512" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#141210" stop-opacity=".72"/>
+    </linearGradient>
+    <filter id="speck" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.42 0 0 0 0 0.38 0 0 0 0 0.28 0 0 0 0.22 0"/>
+      <feComposite operator="in" in2="SourceGraphic"/>
+    </filter>
+  </defs>
+
+  <rect width="820" height="1024" fill="url(#base)"/>
+  <rect width="820" height="1024" fill="url(#lamp)"/>
+
+  <rect x="70"  y="70"  width="330" height="520" rx="10" fill="url(#lay)" stroke="#000" stroke-opacity=".08"/>
+  <rect x="420" y="70"  width="330" height="520" rx="10" fill="url(#lay)" stroke="#000" stroke-opacity=".08"/>
+  <rect x="70"  y="640" width="330" height="300" rx="10" fill="url(#lay)" stroke="#000" stroke-opacity=".08"/>
+  <rect x="420" y="640" width="330" height="300" rx="10" fill="url(#lay)" stroke="#000" stroke-opacity=".08"/>
+
+  <g stroke="#000" stroke-opacity=".1" stroke-width="2">
+    <line x1="70" y1="640" x2="400" y2="640"/>
+    <line x1="420" y1="640" x2="750" y2="640"/>
+    <line x1="400" y1="70"  x2="400" y2="590"/>
+    <line x1="420" y1="70"  x2="420" y2="940"/>
+  </g>
+
+  <ellipse cx="235" cy="330" rx="110" ry="310" fill="#E9E0D0" opacity=".5"/>
+  <ellipse cx="585" cy="330" rx="110" ry="310" fill="#E9E0D0" opacity=".5"/>
+
+  <rect width="820" height="1024" fill="url(#speck)"/>
+  <rect width="820" height="1024" fill="url(#edge)"/>
+</svg>

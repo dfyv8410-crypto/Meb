@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="glowDining" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#7A5233" stop-opacity=".5"/>
+      <stop offset="45%" stop-color="#2B241D" stop-opacity=".25"/>
+      <stop offset="100%" stop-color="#141110" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="wallDining" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1E1A16"/>
+      <stop offset="100%" stop-color="#171310"/>
+    </linearGradient>
+    <linearGradient id="tableTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8A6B42"/>
+      <stop offset="100%" stop-color="#5C4528"/>
+    </linearGradient>
+    <radialGradient id="pend" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#EED2A0" stop-opacity=".9"/>
+      <stop offset="45%" stop-color="#D9B57F" stop-opacity=".18"/>
+      <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="grainDining">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.05"/></feComponentTransfer>
+      <feComposite operator="over" in2="SourceGraphic"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="900" fill="#161210"/>
+  <rect width="1600" height="900" fill="url(#glowDining)"/>
+  <rect width="1600" height="900" fill="url(#wallDining)" opacity=".5"/>
+
+  <!-- pendant line + fixture -->
+  <line x1="800" y1="0" x2="800" y2="210" stroke="#1C1916" stroke-width="4"/>
+  <path d="M770 210 L830 210 L818 226 L782 226 Z" fill="#C9A878" fill-opacity=".85"/>
+  <circle cx="800" cy="330" r="240" fill="url(#pend)"/>
+
+  <!-- dining table -->
+  <g transform="translate(540 560)">
+    <rect x="0" y="30" width="520" height="118" rx="4" fill="url(#tableTop)"/>
+    <path d="M520 90 L520 148 M520 148 L0 148 M0 148 L0 90" stroke="#3A2E1E" stroke-width="2" opacity=".6"/>
+    <!-- legs -->
+    <line x1="40" y1="148" x2="40" y2="250" stroke="#1D1915" stroke-width="14"/>
+    <line x1="480" y1="148" x2="480" y2="250" stroke="#1D1915" stroke-width="14"/>
+    <line x1="260" y1="148" x2="260" y2="250" stroke="#1D1915" stroke-width="10"/>
+  </g>
+
+  <!-- chairs -->
+  <g transform="translate(400 380)">
+    <path d="M30 60 C30 34 48 20 78 20 L176 20 C206 20 224 34 224 60 L224 92 L38 92 L30 60 Z" fill="#2E2820"/>
+    <rect x="38" y="92" width="186" height="16" rx="3" fill="#221D17"/>
+    <path d="M52 220 L60 108 M200 220 L192 108" stroke="#241F18" stroke-width="10" stroke-linecap="round"/>
+    <path d="M20 150 L60 132 L60 92 L38 92 Z" fill="#1E1A15"/>
+    <path d="M232 150 L192 132 L192 92 L214 92 Z" fill="#1E1A15"/>
+  </g>
+  <g transform="translate(1180 260) rotate(180)">
+    <path d="M30 60 C30 34 48 20 78 20 L176 20 C206 20 224 34 224 60 L224 92 L38 92 L30 60 Z" fill="#2A231C"/>
+    <rect x="38" y="92" width="186" height="16" rx="3" fill="#201B14"/>
+    <path d="M20 150 L60 132 L60 92 L38 92 Z" fill="#1B1813"/>
+    <path d="M232 150 L192 132 L192 92 L214 92 Z" fill="#1B1813"/>
+    <path d="M52 92 L60 60 L192 60 L200 92" fill="none" stroke="#3A3126" stroke-width="2"/>
+  </g>
+
+  <!-- table setting -->
+  <ellipse cx="760" cy="90" rx="10" ry="6" fill="#F2E8D6" opacity=".55"/>
+  <ellipse cx="930" cy="176" rx="10" ry="6" fill="#F2E8D6" opacity=".45"/>
+  <rect x="740" y="102" width="42" height="5" rx="2" fill="#8B6C43" opacity=".8"/>
+
+  <rect width="1600" height="900" fill="url(#grainDining)" opacity=".5"/>
+</svg>
