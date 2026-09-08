@@ -54,8 +54,8 @@ function layout_head(string $title, string $desc = ''): void
 ' . ($keywords !== '' ? '<meta name="keywords" content="' . e($keywords) . '">' : '') . '
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/assets/css/premium.css">
-' . ($favicon !== '' ? '<link rel="icon" href="' . e($favicon) . '">' : '') . '
+<link rel="stylesheet" href="/assets/css/premium.css?v=' . meb_asset_version() . '">
+' . (($favicon !== '' && meb_asset_exists($favicon)) ? '<link rel="icon" href="' . e($favicon) . '">' : '') . '
 <link rel="canonical" href="' . e(meb_origin()) . e($_SERVER['REQUEST_URI'] ?? '/') . '">
 <meta property="og:title" content="' . e($ogTitle) . '">
 <meta property="og:description" content="' . e($ogDesc) . '">
@@ -312,16 +312,16 @@ function layout_footer(): void
     if ($hours) echo '<span class="footer-contact-line">' . e($hours) . '</span>';
     echo '</div>
   </div>
+  <div class="footer-wordmark" aria-hidden="true">ГОДНАЯ&nbsp;МЕБЕЛЬ</div>
   <div class="footer-bottom">
     <span class="footer-bottom-brand">&copy; ' . e(!empty($s['copyright']) ? $s['copyright'] : ('ГОДНАЯ МЕБЕЛЬ ' . "\u{00B7}" . ' ' . $year)) . '</span>
     <div class="footer-bottom-meta">
       <a href="/catalog">Каталог</a>
       <a href="/sitemap.xml">Карта сайта</a>
-      <a href="/admin">Админ-панель</a>
     </div>
   </div>
 </div></footer>
-<script src="/assets/js/app.js"></script>
+<script src="/assets/js/app.js?v=' . meb_asset_version() . '"></script>
 </body>
 </html>';
 }

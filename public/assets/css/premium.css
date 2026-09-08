@@ -740,8 +740,8 @@ body.menu-open { overflow: hidden; }
 }
 .footer-col a:hover { color: var(--warm-white); padding-left: 6px; }
 .footer-col-contact h4::after { display: none; }
-.footer-phone {
-  font-size: 1.15rem; font-weight: 600; color: var(--warm-white) !important;
+.footer-col-contact .footer-phone {
+  font-size: 1.15rem; font-weight: 600; color: var(--warm-white);
   letter-spacing: .02em;
 }
 /* CTA — crisp hairline frame, mathematically even in every state:
@@ -784,6 +784,23 @@ body.menu-open { overflow: hidden; }
 .footer-bottom-meta { display: flex; gap: var(--sp-6); }
 .footer-bottom a { color: var(--ash); transition: color .3s var(--ease-out); }
 .footer-bottom a:hover { color: var(--brass-soft); }
+
+/* Giant editorial brand wordmark — the footer's architectural signature.
+   Ghost display type, clipped and non-interactive; reads as part of the
+   composition, not as a banner. Never overflows the viewport. */
+.footer-wordmark {
+  font-family: var(--ff-display);
+  font-size: clamp(2.6rem, 11vw, 9.5rem);
+  line-height: .86;
+  letter-spacing: .015em;
+  text-transform: uppercase;
+  color: rgba(243,239,232,.04);
+  white-space: nowrap;
+  overflow: hidden;
+  user-select: none;
+  pointer-events: none;
+  padding-top: clamp(20px, 4vw, 48px);
+}
 
 @media (max-width: 1080px) {
   .footer-top { grid-template-columns: 1fr; align-items: start; }

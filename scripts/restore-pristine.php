@@ -23,6 +23,25 @@ try {
         echo "  restored $t: $n rows\n";
     }
     db()->commit();
+    // Re-apply the real-photo migration (media rows + category covers) —
+    // the pristine snapshot predates it, so it is not part of _cols.
+    db()->exec(file_get_contents(dirname(__DIR__) . '/sql/collections-real-photos.sql'));
+    // Restore known-good live settings (the snapshot does not carry settings,
+    // and the regression gates overwrite it with test fixtures).
+    $s = get_settings();
+    foreach ([
+        'siteName'  => 'MEB Premium',
+        'phone'     => '+79000000000',
+        'email'     => 'admin@meb.local',
+        'logo'      => '/uploads/branding/tky9wd14922.png',
+        'favicon'   => '/uploads/branding/tky9wd14922.png',
+        'copyright' => '',
+        'socials'   => [],
+    ] as $k => $v) {
+        $s[$k] = $v;
+    }
+    save_settings($s);
+    echo "restored settings + photo migration OK\n";
     echo "RESTORE OK\n";
 } catch (\Throwable $e) {
     db()->rollBack();

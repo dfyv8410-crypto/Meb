@@ -51,7 +51,7 @@ layout_nav('contacts');
         <?php endif; ?>
       </div>
       <?php if (!empty($s['hours'])) echo '<div style="margin-top:var(--sp-4)" class="muted">' . e($s['hours']) . '</div>'; ?>
-      <div style="margin-top:var(--sp-4)" class="muted" style="font-size:13px">Отвечаем в течение часа в рабочее время.</div>
+      <div style="margin-top:var(--sp-4);font-size:13px" class="muted">Отвечаем в течение часа в рабочее время.</div>
     </div>
   </div>
 </section>

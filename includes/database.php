@@ -16,6 +16,9 @@ function db(): PDO
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES   => false,
+            // Fail fast if the database is down instead of hanging the page
+            // while the OS retries the socket/port connection.
+            PDO::ATTR_TIMEOUT            => 5,
         ]);
     }
     return $pdo;

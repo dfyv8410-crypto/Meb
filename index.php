@@ -139,8 +139,20 @@ function serve_file(string $fullPath): void
             'ico'=>'image/x-icon',
         ];
         header('Content-Type: ' . ($map[$ext] ?? 'application/octet-stream'));
-        // if URL is /uploads -> long cache; else short
-        if (strpos($_SERVER['REQUEST_URI'] ?? '', '/uploads') === 0) {
+        // Versioned `/assets` URLs (…?v=…) are immutable — the version string
+        // only changes when the file on disk changes, so a long cache is safe
+        // and guarantees the browser drops the previous copy on deploy.
+        // Unversioned `/assets` and everything else revalidates on every
+        // request, so old heuristic browser/proxy caches can never serve a
+        // stale design long after a change.
+        $uri = $_SERVER['REQUEST_URI'] ?? '';
+        $isAsset = strpos($uri, '/assets/') === 0;
+        if ($isAsset && strpos($uri, '?v=') !== false) {
+            header('Cache-Control: public, max-age=31536000, immutable');
+        } elseif ($isAsset) {
+            header('Cache-Control: public, max-age=0, must-revalidate');
+        }
+        if (strpos($uri, '/uploads') === 0) {
             header('Cache-Control: public, max-age=31536000, immutable');
         }
         readfile($fullPath);
