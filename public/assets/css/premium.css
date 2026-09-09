@@ -1611,6 +1611,23 @@ textarea.input { resize: vertical; min-height: 110px; }
   .nav .logo-mark { display: none; }
 }
 
+/* Mobile product cards — uniform 4:3 media box for every editorial position.
+   The desktop mosaic ratios (16/10, 21/9, 3/5 …) are fine on a wide screen but
+   on a phone a 21/9 slot is barely taller than a strip and a 3/5 slot becomes
+   a skinny slice. Pinning all positions to 4/3 (later in the cascade than the
+   mosaic rules, same specificity) keeps the photo a full, premium frame.
+   The @supports not (aspect-ratio) block below already forces an equal
+   padding-top spacer, so both rendering paths now agree on 4/3. */
+@media (max-width: 720px) {
+  .grid-editorial .card .card-img-wrap,
+  .grid-editorial .card:nth-child(6n+1) .card-img-wrap,
+  .grid-editorial .card:nth-child(6n+2) .card-img-wrap,
+  .grid-editorial .card:nth-child(6n+3) .card-img-wrap,
+  .grid-editorial .card:nth-child(6n+4) .card-img-wrap,
+  .grid-editorial .card:nth-child(6n+5) .card-img-wrap,
+  .grid-editorial .card:nth-child(6n+6) .card-img-wrap { aspect-ratio: 4/3; }
+}
+
 /* ============================================================
    Legacy ratio fallback — browsers WITHOUT aspect-ratio support
    (older iOS/Android WebViews). The spacer guarantees a real box

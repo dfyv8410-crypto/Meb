@@ -32,13 +32,21 @@ function meb_img_source_path(string $src): ?string
 {
     $root = defined('MEB_ROOT') ? MEB_ROOT : dirname(__DIR__);
     if ($src === '' || $src[0] !== '/') return null;
-    $full = realpath($root . $src);
-    if ($full === false || !is_file($full)) return null;
+    // Site-rooted URLs are served both from the project root (uploads/) and
+    // from /public (assets/… live in public/assets/…). Trying only
+    // $root . $src meant /assets/img/*.svg never resolved and every product
+    // card silently fell back to the placeholder drawing.
     $realRoot = realpath($root);
-    if ($realRoot === false || strncmp($full, $realRoot, strlen($realRoot)) !== 0) return null;
-    foreach (meb_img_roots() as $r) {
-        $rr = realpath($r);
-        if ($rr !== false && strncmp($full, $rr, strlen($rr)) === 0) return $full;
+    $candidates = [$root . $src, $root . '/public' . $src];
+    foreach ($candidates as $cand) {
+        $full = realpath($cand);
+        if ($full === false || !is_file($full)) continue;
+        if ($realRoot === false || strncmp($full, $realRoot, strlen($realRoot)) !== 0) continue;
+        foreach (meb_img_roots() as $r) {
+            $rr = realpath($r);
+            if ($rr !== false && strncmp($full, $rr, strlen($rr)) === 0) return $full;
+        }
+        break;
     }
     return null;
 }
