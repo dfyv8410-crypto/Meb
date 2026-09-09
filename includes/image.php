@@ -237,6 +237,31 @@ function meb_img_ratio(?string $ratio): array
 }
 
 /**
+ * Intrinsic CSS-pixel size of an SVG source (its width/height attributes, or
+ * the viewBox when they are absent). Null when unknown. Used to emit truthful
+ * width/height ratio hints so the pre-load slot matches the real aspect — an
+ * SVG must never be hinted with a differently-proportioned raster box.
+ */
+if (!function_exists('meb_img_svg_size')) {
+function meb_img_svg_size(string $src): ?array
+{
+    $path = meb_img_source_path($src);
+    if ($path === null) return null;
+    $head = @file_get_contents($path, false, null, 0, 4096);
+    if ($head === false) return null;
+    $w = null; $h = null;
+    if (preg_match('/<svg\b[^>]*\bwidth\s*=\s*"([0-9.]+)/i', $head, $m)) $w = (float) $m[1];
+    if (preg_match('/<svg\b[^>]*\bheight\s*=\s*"([0-9.]+)/i', $head, $m)) $h = (float) $m[1];
+    if (($w === null || $h === null) && preg_match('/<svg\b[^>]*\bviewBox\s*=\s*"([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)"/i', $head, $m)) {
+        $w = $w ?? (float) $m[3];
+        $h = $h ?? (float) $m[4];
+    }
+    if ($w === null || $h === null || $w <= 0 || $h <= 0) return null;
+    return [(int) round($w), (int) round($h)];
+}
+}
+
+/**
  * Build a truthful signed srcset string.
  *
  * - Candidates are generated at the display aspect ratio ($ratio), not a
@@ -339,19 +364,28 @@ function meb_pic(string $src, string $alt, array $o = []): string
     if ($isSvg) {
         $srcAttr = $src;
         $srcset  = $src . ' 1x';
+        // SVG: hint the REAL intrinsic aspect (width/height attrs), not the
+        // requested raster box — the requested w/h is only a display target and
+        // its ratio may clash with the artwork (e.g. 1600x900 for a 1200x920
+        // SVG), which reserved a wrong pre-load slot and could squash the image.
+        $size = meb_img_svg_size($src);
+        $boxW = $size !== null ? $size[0] : $w;
+        $boxH = $size !== null ? $size[1] : $h;
     } else {
         $variant = meb_var_url($src, $w, $h, $fit, $q);
         // The real fallback is a sized variant — never the multi-MB original,
         // so no browser downloads a 2MB PNG to fill a 300px slot.
         $srcAttr = $variant !== $src ? $variant : $src;
         $srcset  = meb_pic_srcset($src, [320, 480, 640, 960, 1280, 1920], $fit, $q, $ratio);
+        $boxW = $w;
+        $boxH = $h;
     }
 
     $out = '<img src="' . e($srcAttr) . '"' . $cls;
     $out .= ' srcset="' . e($srcset) . '"';
     $out .= ' sizes="' . e($sizes) . '"';
     $out .= ' alt="' . e($alt) . '"';
-    $out .= ' width="' . $w . '" height="' . $h . '"';
+    $out .= ' width="' . $boxW . '" height="' . $boxH . '"';
     $out .= ' loading="' . $loading . '" decoding="async"';
     if (!empty($o['eager'])) $out .= ' fetchpriority="high"';
     $out .= '>';
