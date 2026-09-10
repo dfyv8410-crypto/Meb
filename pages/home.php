@@ -40,7 +40,7 @@ function card(array $row, string $url, array $fields): void {
     echo '<a href="' . e($url) . '" class="card card-clean tilt reveal img-reveal">';
     echo '<div class="card-img-wrap">' . meb_pic($img, (string) ($row['title'] ?? ''), [
         'w' => 960, 'h' => 720, 'fit' => 'cover', 'q' => 80,
-        'sizes' => '(min-width:1081px) 33vw, (min-width:721px) 50vw, 100vw',
+        'sizes' => '(min-width:1081px) 33vw, (min-width:721px) 50vw, calc(100vw - 40px)',
     ]) . '</div>';
     echo '<div class="card-body">';
     echo '<div class="eyebrow">' . e($meta) . '</div>';
@@ -73,7 +73,7 @@ layout_nav('home', true);
 <?php if ($photoBandImg): ?>
 <section class="section-photo" aria-label="Интерьеры">
   <div class="parallax-media" data-speed="0.16">
-    <?= meb_pic($photoBandImg, 'Интерьер из массива и камня', ['w' => 1920, 'h' => 1080, 'fit' => 'cover', 'q' => 82, 'sizes' => '100vw']) ?>
+    <?= meb_pic($photoBandImg, 'Интерьер из массива и камня', ['w' => 1920, 'h' => 1080, 'fit' => 'cover', 'q' => 82, 'sizes' => '100vw', 'eager' => true]) ?>
   </div>
   <div class="section-photo-veil" aria-hidden="true"></div>
   <div class="section-photo-content">

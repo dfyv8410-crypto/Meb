@@ -130,6 +130,12 @@ if (($seg[0] ?? '') === 'banners-public') {
     handle_banners_public();
 }
 
+// Watermark — admin (live preview only, no writes)
+if (($seg[0] ?? '') === 'watermark') {
+    require __DIR__ . '/watermark.php';
+    handle_watermark($METHOD, array_slice($seg, 1));
+}
+
 // Install
 if (($seg[0] ?? '') === 'install') {
     require __DIR__ . '/install.php';

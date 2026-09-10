@@ -35,7 +35,7 @@ layout_nav('catalog');
       <a href="/catalog/<?= e($slug) ?>" class="card card-clean reveal img-reveal">
         <div class="card-img-wrap"><?= meb_pic($cover, $title, [
             'w' => 960, 'h' => 720, 'fit' => 'cover', 'q' => 80,
-            'sizes' => '(min-width:1081px) 33vw, (min-width:721px) 50vw, 100vw',
+            'sizes' => '(min-width:1081px) 33vw, (min-width:721px) 50vw, calc(100vw - 40px)',
         ]) ?></div>
         <div class="card-body">
           <div class="eyebrow">Коллекция</div>
@@ -66,7 +66,7 @@ layout_nav('catalog');
           echo '<a href="' . $href . '" class="card card-clean reveal img-reveal">';
           echo '<div class="card-img-wrap">' . meb_pic(first_image($c), (string) ($c['title'] ?? ''), [
               'w' => 960, 'h' => 720, 'fit' => 'cover', 'q' => 80,
-              'sizes' => '(min-width:1081px) 33vw, (min-width:721px) 50vw, 100vw',
+              'sizes' => '(min-width:1081px) 33vw, (min-width:721px) 50vw, calc(100vw - 40px)',
           ]) . '</div>';
           echo '<div class="card-body"><div class="eyebrow">' . e($catTitle) . '</div>';
           echo '<div class="card-title">' . e($c['title'] ?? 'Без названия') . '</div>';

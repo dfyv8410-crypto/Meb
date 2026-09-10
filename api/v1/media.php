@@ -76,9 +76,39 @@ function handle_media(string $M, array $seg): void
         @chmod($full, 0644);
 
         // Cross-check: raster extensions must carry valid raster payloads.
-        if (in_array($ext, ['jpg','jpeg','png','gif','webp'], true) && @getimagesize($full) === false) {
+        if (in_array($ext, ['jpg','jpeg','png','gif','webp','avif'], true) && @getimagesize($full) === false) {
             @unlink($full);
             fail('Not a valid image', 400);
+        }
+
+        // Hardening: reject decompression bombs and absurd dimensions.
+        if (!in_array($ext, ['svg', 'ico'], true)) {
+            $dims = @getimagesize($full);
+            if ($dims === false || (int) $dims[0] <= 0 || (int) $dims[1] <= 0) {
+                @unlink($full);
+                fail('Not a valid image', 400);
+            }
+            if ((int) $dims[0] > 12000 || (int) $dims[1] > 12000 || (int) $dims[0] * (int) $dims[1] > 40000000) {
+                @unlink($full);
+                fail('Изображение слишком большое (макс. 12000×12000, 40 МП)', 400);
+            }
+        }
+
+        // SVG hardening: only allow pure vector drawings — no scripts, no
+        // embedded HTML/foreignObject, no remote fetchers.
+        if ($ext === 'svg') {
+            $svg = @file_get_contents($full);
+            if ($svg === false) { @unlink($full); fail('Not a valid SVG', 400); }
+            $lower = strtolower($svg);
+            $bad = ['<script', 'javascript:', 'onload=', 'onerror=', 'onclick=',
+                    'foreignobject', '<iframe', '<object', '<embed', 'data:text/html',
+                    '&#x3c;', '%3cscript'];
+            foreach ($bad as $needle) {
+                if (strpos($lower, $needle) !== false) { @unlink($full); fail('SVG содержит недопустимое содержимое', 400); }
+            }
+            $trim = ltrim($svg, "\xEF\xBB\xBF\xFE\xFF \t\r\n");
+            if (preg_match('#^<!--.*?-->#s', $trim, $_m)) $trim = ltrim(substr($trim, strlen($_m[0])));
+            if (stripos($trim, '<svg') !== 0) { @unlink($full); fail('Файл не является корректным SVG', 400); }
         }
 
         [$w, $h] = image_dims($full);
@@ -91,13 +121,16 @@ function handle_media(string $M, array $seg): void
         $st->execute([$id, $storeName, $filename, strlen($raw), $w, $h, $safeFolder,
                       sanitize((string)($b['alt'] ?? '')), $url, $mime, now_db(), now_db()]);
         audit_log('create', 'media', $id);
-        // Warm the responsive pipeline for common card + hero sizes.
-        if ($w >= 320) {
-            foreach ([[480,360],[640,480],[1280,720]] as $dim) {
-                try {
-                    meb_var_generate($full, (int) $dim[0], (int) $dim[1], 'cover', 82);
-                } catch (Throwable $t) { /* non-fatal */ }
-            }
+        // Warm the responsive pipeline (4/3 cards + 16/9 hero) with the same
+        // sizes the templates request. Uses the site-rooted URL so the cache
+        // signature matches the public route, and skips sizes the source is
+        // too small for. Watermark applies automatically once enabled.
+        foreach ([[480,360],[640,480],[768,576],[960,720],[1280,960],[1280,720]] as $dim) {
+            try {
+                if (meb_img_need_resize($url, (int) $dim[0], (int) $dim[1], 'cover')) {
+                    meb_var_generate($url, (int) $dim[0], (int) $dim[1], 'cover', 82);
+                }
+            } catch (Throwable $t) { /* non-fatal */ }
         }
         ok(find_row('media', $id));
     }

@@ -41,9 +41,16 @@ REST: `GET /api/v1/{projects,materials,services,reviews}` + CRUD (editor+)
 - `POST /api/v1/reviews-public` — отправить отзыв (модерация)
 
 ## Media
-- `POST /api/v1/media/upload` — загрузка (base64, auth)
+- `POST /api/v1/media/upload` — загрузка (base64, auth). Хард-проверки: реальный MIME (finfo),
+  для растров — getimagesize + лимиты 12000×12000 / 40 МП, для SVG — запрет скриптов и внешнего
+  содержимого. После загрузки автоматически создаются производные 4:3 (480…1280) и 16:9 1280×720.
 - `GET  /api/v1/media` — список (auth)
 - `DELETE /api/v1/media/:id` — удалить (auth)
+
+## Watermark (предпросмотр, admin-only)
+- `GET /api/v1/watermark/preview?opacity=25&size=22&position=br&mode=single[&logo=/uploads/...]`
+  — рендерит реальное фото мебели с выбранными настройками (PNG), lives preview для админки.
+  Ничего не пишет: ни настроек, ни кэша, ни файлов.
 
 ## Menu
 - `GET    /api/v1/menu` — пункты меню (сортировка по sort_order)

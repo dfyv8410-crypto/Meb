@@ -498,6 +498,9 @@ async function editLead(id) {
 async function renderSettings(list) {
   const s = await jget('/api/v1/settings') || {};
   const smtp = s.smtp || {}, fcm = s.fcm || {}, socials = s.socials || {}, og = s.og || {}, seo = s.seo || {}, analytics = s.analytics || {};
+  const wm = s.watermark || {};
+  window._wmLogo = ''; // new logo uploaded but not yet saved
+  window._wmSavedLogo = wm.logo || '';
 
   const logoSection = s.logo
     ? `<div style="margin-top:12px;padding:16px;background:var(--linen);border-radius:8px;text-align:center">
@@ -551,6 +554,62 @@ async function renderSettings(list) {
       <div>
         <label style="margin-top:0">Копирайт</label><input id="s_copyright" class="input" value="${esc(s.copyright || '')}" placeholder="© 2026 MEB">
         <label style="margin-top:12px">Email для уведомлений</label><input id="s_notifyEmail" class="input" value="${esc(s.notifyEmail || '')}">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <b style="font-size:15px">Защита фото (watermark)</b>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px">Логотип автоматически наносится на все изображения сайта (Mobile/Tablet/Desktop/Retina). Оригиналы файлов не изменяются. При изменении настроек кэш изображений обновляется автоматически.</div>
+    <div style="margin-top:14px;display:flex;align-items:center;gap:14px">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none">
+        <input type="checkbox" id="s_wmEnabled" ${wm.enabled ? 'checked' : ''} onchange="wmChanged()"> Включить защиту фото
+      </label>
+      <span style="font-size:12px;color:var(--muted)" id="s_wmLogoState">${wm.logo ? 'Логотип загружен' : 'Логотип не выбран'}</span>
+    </div>
+    <div class="grid2" style="margin-top:14px">
+      <div>
+        <label>Логотип водяного знака</label>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:6px">PNG с прозрачным фоном (например, логотип «ГОДНАЯ МЕБЕЛЬ»)</div>
+        <input type="file" id="s_wmFile" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="wmFileChosen(this)">
+        <button class="btn btn-sm btn-ghost" onclick="el('s_wmFile').click()">Выбрать файл</button>
+        <span id="s_wmName" style="font-size:12px;color:var(--muted);margin-left:8px"></span>
+        ${wm.logo ? `<div style="margin-top:10px"><img src="${esc(wm.logo)}" style="max-height:36px;background:#fff;border-radius:6px;padding:6px"></div>` : ''}
+      </div>
+      <div>
+        <label>Непрозрачность: <span id="s_wmOpacityVal">${wm.opacity || 25}</span>%</label>
+        <input type="range" id="s_wmOpacity" min="0" max="100" value="${wm.opacity || 25}" oninput="wmChanged()" style="width:100%">
+        <label>Размер: <span id="s_wmSizeVal">${wm.size || 22}</span>%</label>
+        <input type="range" id="s_wmSize" min="4" max="45" value="${wm.size || 22}" oninput="wmChanged()" style="width:100%">
+      </div>
+      <div>
+        <label>Расположение</label>
+        <select id="s_wmPosition" class="input" onchange="wmChanged()">
+          <option value="tl" ${wm.position === 'tl' ? 'selected' : ''}>Верхний левый</option>
+          <option value="tc" ${wm.position === 'tc' ? 'selected' : ''}>Верхний по центру</option>
+          <option value="tr" ${wm.position === 'tr' ? 'selected' : ''}>Верхний правый</option>
+          <option value="cl" ${wm.position === 'cl' ? 'selected' : ''}>Слева по центру</option>
+          <option value="cc" ${wm.position === 'cc' ? 'selected' : ''}>По центру</option>
+          <option value="cr" ${wm.position === 'cr' ? 'selected' : ''}>Справа по центру</option>
+          <option value="bl" ${wm.position === 'bl' ? 'selected' : ''}>Нижний левый</option>
+          <option value="bc" ${wm.position === 'bc' ? 'selected' : ''}>Нижний по центру</option>
+          <option value="br" ${wm.position === 'br' ? 'selected' : ''}>Нижний правый (по умолчанию)</option>
+        </select>
+      </div>
+      <div>
+        <label>Режим нанесения</label>
+        <select id="s_wmMode" class="input" onchange="wmChanged()">
+          <option value="single" ${wm.mode !== 'tile' ? 'selected' : ''}>Одиночный</option>
+          <option value="tile" ${wm.mode === 'tile' ? 'selected' : ''}>Повторяющийся</option>
+        </select>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px">Одиночный — один логотип (обычно в углу); Повторяющийся — сетка по всему фото.</div>
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      <label>Предпросмотр на реальном фото</label>
+      <div style="margin-top:8px;background:var(--linen);border-radius:10px;padding:10px;text-align:center;min-height:120px">
+        <img id="s_wmPreview" alt="Предпросмотр водяного знака" style="max-width:100%;border-radius:6px;display:none">
+        <div id="s_wmNoLogo" style="font-size:13px;color:var(--muted);padding:24px;display:none">Логотип не выбран. Загрузите логотип «ГОДНАЯ МЕБЕЛЬ» (или другой) — предпросмотр появится сразу.</div>
       </div>
     </div>
   </div>
@@ -653,6 +712,69 @@ async function renderSettings(list) {
     <span id="s_msg" style="font-size:13px;color:var(--olive)"></span>
   </div>`;
   imagePickerRowOnChange('s_ogImage');
+  if (window._wmSavedLogo) refreshWmPreview();
+  else {
+    const nl = el('s_wmNoLogo'), pi = el('s_wmPreview');
+    if (nl) nl.style.display = 'block';
+    if (pi) pi.style.display = 'none';
+  }
+}
+
+/* ============ WATERMARK ============ */
+let _wmPreviewT = 0;
+function wmControl() {
+  return {
+    enabled: !!el('s_wmEnabled') && el('s_wmEnabled').checked,
+    opacity: parseInt((el('s_wmOpacity') || {}).value || '25', 10),
+    size: parseInt((el('s_wmSize') || {}).value || '22', 10),
+    position: (el('s_wmPosition') || {}).value || 'br',
+    mode: (el('s_wmMode') || {}).value || 'single',
+    logo: window._wmLogo || window._wmSavedLogo || ''
+  };
+}
+function wmChanged() {
+  const c = wmControl();
+  const ov = el('s_wmOpacityVal'), sv = el('s_wmSizeVal');
+  if (ov) ov.textContent = c.opacity;
+  if (sv) sv.textContent = c.size;
+  clearTimeout(_wmPreviewT);
+  _wmPreviewT = setTimeout(refreshWmPreview, 300);
+}
+async function refreshWmPreview() {
+  const c = wmControl();
+  const img = el('s_wmPreview'), noLogo = el('s_wmNoLogo');
+  if (!img) return;
+  if (!c.logo) { img.style.display = 'none'; if (noLogo) { noLogo.style.display = 'block'; noLogo.textContent = 'Логотип не выбран. Загрузите логотип — предпросмотр появится сразу.'; } return; }
+  try {
+    const qs = 'opacity=' + c.opacity + '&size=' + c.size + '&position=' + encodeURIComponent(c.position) + '&mode=' + encodeURIComponent(c.mode) + '&logo=' + encodeURIComponent(c.logo);
+    const r = await fetch('/api/v1/watermark/preview?' + qs, { headers: hdr() });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    img.onload = () => URL.revokeObjectURL(url);
+    img.src = url;
+    img.style.display = 'inline-block';
+    if (noLogo) noLogo.style.display = 'none';
+  } catch (e) {
+    img.style.display = 'none';
+    if (noLogo) { noLogo.style.display = 'block'; noLogo.textContent = 'Не удалось загрузить предпросмотр: ' + e.message; }
+  }
+}
+async function wmFileChosen(input) {
+  const f = input.files[0];
+  if (!f) return;
+  el('s_wmName').textContent = f.name;
+  const b64 = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(f); });
+  const up = await jpost('/api/v1/media/upload', { filename: 'watermark-' + f.name, data: b64, alt: 'watermark', folder: 'branding' });
+  if (up.ok && up.data && up.data.url) {
+    window._wmLogo = up.data.url;
+    el('s_wmLogoState').textContent = 'Новый логотип загружен — нажмите «Сохранить всё»';
+    refreshWmPreview();
+    toast('Логотип водяного знака загружен', 'success');
+  } else {
+    input.value = '';
+    toast('Ошибка загрузки логотипа: ' + (up.error || 'неизвестно'), 'error');
+  }
 }
 
 function previewLogo(input) {
@@ -703,6 +825,8 @@ async function saveSettings() {
     smtp: { host: el('s_smtpHost').value.trim(), port: el('s_smtpPort').value.trim(), user: el('s_smtpUser').value.trim(), pass: el('s_smtpPass').value, from: el('s_smtpFrom').value.trim() },
     fcm: { key: el('s_fcmKey').value.trim(), topic: el('s_fcmTopic').value.trim() }
   };
+  const wc = wmControl();
+  body.watermark = { enabled: wc.enabled, logo: wc.logo, opacity: wc.opacity, size: wc.size, position: wc.position, mode: wc.mode };
   // Handle logo upload
   const logoFile = el('s_logoFile').files[0];
   if (logoFile) {

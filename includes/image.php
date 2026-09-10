@@ -72,12 +72,183 @@ function meb_img_secret(): string
 }
 }
 
+if (!function_exists('meb_wm_config')) {
+/**
+ * Watermark settings, read from the site settings document (helpers.php).
+ * Cache-friendly: whenever any of these change, meb_wm_stamp() changes and
+ * the /img/var URL signature changes too — old variants are replaced by new
+ * URLs (content-addressed invalidation), originals are never touched.
+ */
+function meb_wm_config(): array
+{
+    static $cfg = null;
+    if ($cfg !== null) return $cfg;
+    $defaults = ['enabled' => false, 'logo' => '', 'opacity' => 25, 'size' => 22, 'position' => 'br', 'mode' => 'single'];
+    $wm = [];
+    if (function_exists('get_settings')) {
+        try {
+            $s = get_settings();
+            if (is_array($s) && isset($s['watermark']) && is_array($s['watermark'])) $wm = $s['watermark'];
+        } catch (\Throwable $e) { $wm = []; }
+    }
+    $cfg = $defaults;
+    foreach (['enabled' => 'bool', 'opacity' => 'int', 'size' => 'int', 'position' => 'str', 'mode' => 'str', 'logo' => 'str'] as $k => $t) {
+        if (!array_key_exists($k, $wm)) continue;
+        $v = $wm[$k];
+        $cfg[$k] = $t === 'bool' ? (bool) $v : ($t === 'int' ? (int) $v : (string) $v);
+    }
+    $cfg['enabled'] = $cfg['enabled'] && trim($cfg['logo']) !== '';
+    $cfg['opacity'] = max(0, min(100, $cfg['opacity']));
+    $cfg['size'] = max(4, min(45, $cfg['size']));
+    if (!preg_match('#^(tl|tc|tr|cl|cc|cr|bl|bc|br)$#', (string) $cfg['position'])) $cfg['position'] = 'br';
+    if (!in_array($cfg['mode'], ['single', 'tile'], true)) $cfg['mode'] = 'single';
+    return $cfg;
+}
+}
+
+if (!function_exists('meb_wm_stamp')) {
+/**
+ * Short token covering every watermark-affecting input (logo file itself
+ * included via its mtime/size). Empty string while the watermark is off, so
+ * URLs of the no-watermark site stay byte-identical to the pre-watermark era.
+ */
+function meb_wm_stamp(): string
+{
+    $cfg = meb_wm_config();
+    if (!$cfg['enabled']) return '';
+    $p = meb_img_source_path((string) $cfg['logo']);
+    $meta = $p !== null ? (string) @filemtime($p) . '-' . (string) @filesize($p) : 'none';
+    return substr(hash_hmac('sha256', $meta . '|' . $cfg['opacity'] . '|' . $cfg['size'] . '|' . $cfg['position'] . '|' . $cfg['mode'], meb_img_secret()), 0, 8);
+}
+}
+
 if (!function_exists('meb_var_sig')) {
 function meb_var_sig(string $src, int $w, int $h, string $fit, int $q): string
 {
     $path = meb_img_source_path($src);
     $stamp = $path !== null ? (string) @filemtime($path) : '0';
-    return substr(hash_hmac('sha256', $src . '|' . $w . '|' . $h . '|' . $fit . '|' . $q . '|' . $stamp, meb_img_secret()), 0, 24);
+    $payload = $src . '|' . $w . '|' . $h . '|' . $fit . '|' . $q . '|' . $stamp;
+    $wm = meb_wm_stamp();
+    if ($wm !== '') $payload .= '|wm:' . $wm;
+    return substr(hash_hmac('sha256', $payload, meb_img_secret()), 0, 24);
+}
+}
+
+if (!function_exists('meb_wm_logo_image')) {
+/** Load the watermark logo as a GD image (alpha preserved), or null. */
+function meb_wm_logo_image(array $cfg)
+{
+    $logo = (string) ($cfg['logo'] ?? '');
+    if ($logo === '') return null;
+    $path = meb_img_source_path($logo);
+    if ($path === null || !meb_img_ext_ok($path)) return null;
+    $im = meb_img_load($path);
+    return $im ?: null;
+}
+}
+
+if (!function_exists('meb_wm_scaled_alpha')) {
+/** Multiply every alpha channel value by opacity/100 (keeps colors). */
+function meb_wm_scaled_alpha($im, int $opacity): void
+{
+    if ($opacity >= 100) return;
+    $w = imagesx($im); $h = imagesy($im);
+    imagealphablending($im, false);
+    imagesavealpha($im, true);
+    for ($y = 0; $y < $h; $y++) {
+        for ($x = 0; $x < $w; $x++) {
+            $c = imagecolorat($im, $x, $y);
+            $a = ($c >> 24) & 0x7F;
+            if ($a <= 0) continue;
+            $na = (int) round($a * $opacity / 100);
+            if ($na > 127) $na = 127;
+            imagesetpixel($im, $x, $y, (($c & 0xFFFFFF) | ($na << 24)));
+        }
+    }
+}
+}
+
+if (!function_exists('meb_wm_pos')) {
+/** Anchor point for the logo given a "row+col" position code and a margin. */
+function meb_wm_pos(string $pos, int $cw, int $ch, int $w, int $h, int $m): array
+{
+    switch ($pos[0]) {
+        case 't': $y = $m; break;
+        case 'b': $y = max(0, $ch - $h - $m); break;
+        default:  $y = (int) max(0, ($ch - $h) / 2);
+    }
+    switch ($pos[1]) {
+        case 'l': $x = $m; break;
+        case 'r': $x = max(0, $cw - $w - $m); break;
+        default:  $x = (int) max(0, ($cw - $w) / 2);
+    }
+    return [$x, $y];
+}
+}
+
+if (!function_exists('meb_wm_apply')) {
+/**
+ * Draw the watermark onto a final-size canvas (already resized/cropped).
+ * $cfg comes from meb_wm_config(); when not enabled this is a no-op.
+ * $override allows a draft config (admin preview) to be applied to the same
+ * photo without touching any settings or cache.
+ */
+function meb_wm_apply($canvas, array $cfg, array $override = []): void
+{
+    if (!empty($override)) {
+        foreach (['enabled', 'logo', 'opacity', 'size', 'position', 'mode'] as $k) {
+            if (array_key_exists($k, $override)) $cfg[$k] = $override[$k];
+        }
+        $cfg['enabled'] = !empty($cfg['enabled']) && trim((string) $cfg['logo']) !== '';
+    }
+    if (empty($cfg['enabled'])) return;
+
+    $cw = imagesx($canvas); $ch = imagesy($canvas);
+    if ($cw < 64 || $ch < 64) return; // too small to watermark faithfully
+
+    $logo = meb_wm_logo_image($cfg);
+    if (!$logo) return;
+    $lw = imagesx($logo); $lh = imagesy($logo);
+    if ($lw <= 0 || $lh <= 0) { imagedestroy($logo); return; }
+
+    $target = (int) round(min($cw, $ch) * max(4, min(45, (int) $cfg['size'])) / 100);
+    if ($target < 8) { imagedestroy($logo); return; }
+    $tw = $target;
+    $th = (int) max(1, round($lh * $tw / $lw));
+
+    $tmp = imagecreatetruecolor($tw, $th);
+    if (!$tmp) { imagedestroy($logo); return; }
+    imagealphablending($tmp, false);
+    imagesavealpha($tmp, true);
+    $t = imagecolorallocatealpha($tmp, 0, 0, 0, 127);
+    imagefill($tmp, 0, 0, $t);
+    imagecopyresampled($tmp, $logo, 0, 0, 0, 0, $tw, $th, $lw, $lh);
+    imagedestroy($logo);
+
+    $opacity = max(0, min(100, (int) $cfg['opacity']));
+    if ($opacity < 100) meb_wm_scaled_alpha($tmp, $opacity);
+
+    $margin = (int) max(14, round(min($cw, $ch) * 0.04));
+    imagealphablending($canvas, true);
+    if ($cfg['mode'] === 'tile') {
+        $px = $tw + (int) round($tw * 0.8);
+        $py = $th + (int) round($th * 0.8);
+        $px = max($tw + 2, $px); $py = max($th + 2, $py);
+        $row = 0;
+        for ($ty = 0; $ty < $ch; $ty += $py) {
+            $dx = ($row % 2 === 0) ? 0 : (int) round($px / 2);
+            for ($tx = -$tw; $tx < $cw; $tx += $px) {
+                imagecopy($canvas, $tmp, max(-$tw, $tx + $dx), $ty, 0, 0, $tw, $th);
+            }
+            $row++;
+        }
+    } else {
+        [$x, $y] = meb_wm_pos((string) $cfg['position'], $cw, $ch, $tw, $th, $margin);
+        imagecopy($canvas, $tmp, $x, $y, 0, 0, $tw, $th);
+    }
+    imagedestroy($tmp);
+    imagealphablending($canvas, false);
+    imagesavealpha($canvas, true);
 }
 }
 
@@ -211,6 +382,11 @@ function meb_var_generate(string $src, int $w, int $h, string $fit, int $q): ?st
         }
     }
 
+    // Watermark: applied on the finished canvas only — the original file is
+    // never touched. Cache is invalidated via the URL signature (see
+    // meb_wm_stamp()), so old variants simply stop being referenced.
+    meb_wm_apply($canvas, meb_wm_config());
+
     $sig = meb_var_sig($src, $w, $h, $fit, $q);
     $dir = MEB_DATA_DIR . '/cache/img/' . substr($sig, 0, 2);
     if (!is_dir($dir)) @mkdir($dir, 0777, true);
@@ -295,8 +471,12 @@ function meb_pic_srcset(string $src, array $widths, string $fit = 'cover', int $
         $parts[$w] = $u . ' ' . $w . 'w';
     }
     ksort($parts);
-    // Honest ceiling: the source file at its real width.
-    if (!isset($parts[$naturalW])) {
+    // Honest ceiling: the source file at its real width — but NEVER while the
+    // watermark is on: the raw original carries no logo, and a huge/Retina
+    // display would otherwise receive it. The largest generated variant caps
+    // the list instead (tiny sources smaller than the smallest candidate are
+    // the only exception — there is nothing generated to serve for them).
+    if (empty($parts) || (!isset($parts[$naturalW]) && meb_wm_stamp() === '')) {
         $parts[$naturalW] = $src . ' ' . $naturalW . 'w';
     }
     return implode(', ', $parts);
@@ -376,7 +556,7 @@ function meb_pic(string $src, string $alt, array $o = []): string
         // The real fallback is a sized variant — never the multi-MB original,
         // so no browser downloads a 2MB PNG to fill a 300px slot.
         $srcAttr = $variant !== $src ? $variant : $src;
-        $srcset  = meb_pic_srcset($src, [320, 480, 640, 960, 1280, 1920], $fit, $q, $ratio);
+        $srcset  = meb_pic_srcset($src, [320, 480, 640, 768, 960, 1280, 1440, 1920], $fit, $q, $ratio);
         $boxW = $w;
         $boxH = $h;
     }

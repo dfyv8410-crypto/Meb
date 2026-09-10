@@ -45,7 +45,7 @@ layout_nav('projects');
       <div class="img-reveal">
         <?= meb_pic($src, (string) ($project['title'] ?? ''), [
             'w' => 960, 'h' => 540, 'fit' => 'cover', 'q' => 80,
-            'class' => 'g-img', 'sizes' => '(min-width:721px) 50vw, 100vw',
+            'class' => 'g-img', 'sizes' => '(min-width:721px) 50vw, calc(100vw - 40px)',
         ]) ?>
       </div>
     <?php endforeach; ?>
