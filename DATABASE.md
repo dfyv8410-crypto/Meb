@@ -6,7 +6,7 @@ MySQL 5.7+ через PDO. Подготовленные выражения, JSON
 ## Tables (18)
 - `users` — id, email, name, role, pass_hash, created_at, updated_at
 - `pages` — id, slug, title, h1, seo_title, seo_desc, canonical, blocks (JSON), published, created_at, updated_at
-- `catalog_categories` — id, slug, title, description, cover, sort_order
+- `catalog_categories` — id, slug, title, description, cover, parent_id, is_active, sort, created_at, updated_at
 - `catalog` — id, slug, title, description, category_id, price, images (JSON), specs (JSON), featured, published, created_at, updated_at
 - `projects` — id, slug, title, description, category, images (JSON), features (JSON), materials (JSON), year, published, created_at, updated_at
 - `materials` — id, slug, title, type, description, image, props (JSON), created_at, updated_at

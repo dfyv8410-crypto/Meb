@@ -149,12 +149,102 @@ function normalize_seed_row(string $table, array $row): array
     return $row;
 }
 
+/**
+ * Cyrillic → latin slug fallback and generic slugifier for categories.
+ */
+function category_slugify(string $s): string
+{
+    $s = mb_strtolower(trim($s), 'UTF-8');
+    $map = [
+        'а' => 'a', 'б' => 'b', 'в' => 'v', 'г' => 'g', 'д' => 'd', 'е' => 'e', 'ё' => 'e',
+        'ж' => 'zh', 'з' => 'z', 'и' => 'i', 'й' => 'y', 'к' => 'k', 'л' => 'l', 'м' => 'm',
+        'н' => 'n', 'о' => 'o', 'п' => 'p', 'р' => 'r', 'с' => 's', 'т' => 't', 'у' => 'u',
+        'ф' => 'f', 'х' => 'h', 'ц' => 'ts', 'ч' => 'ch', 'ш' => 'sh', 'щ' => 'sch',
+        'ъ' => '', 'ы' => 'y', 'ь' => '', 'э' => 'e', 'ю' => 'yu', 'я' => 'ya',
+    ];
+    $s = strtr($s, $map);
+    $s = preg_replace('/[^a-z0-9]+/u', '-', $s);
+    $s = trim((string) $s, '-');
+    return $s === '' ? 'category' : substr($s, 0, 120);
+}
+
+/** Unique slug check (excluding the row being edited). */
+function category_slug_taken(string $slug, string $excludeId = ''): bool
+{
+    $st = db()->prepare('SELECT id FROM catalog_categories WHERE slug = ? AND id <> ? LIMIT 1');
+    $st->execute([$slug, $excludeId]);
+    return (bool) $st->fetch();
+}
+
+/**
+ * Normalize/nvalidate a category body for POST/PUT.
+ * Fails the request with a readable message instead of leaking a DB error.
+ */
+function normalize_category_body(array $b, string $excludeId = ''): array
+{
+    $title = trim((string) ($b['title'] ?? ($b['name'] ?? '')));
+    if ($title === '') fail('Название категории обязательно', 400);
+
+    $slug = trim((string) ($b['slug'] ?? ''));
+    if ($slug === '') $slug = category_slugify($title);
+    if (!preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) $slug = category_slugify($slug);
+    if (category_slug_taken($slug, $excludeId)) fail('Категория с таким slug уже существует', 409);
+
+    $out = [
+        'title' => mb_substr($title, 0, 255),
+        'slug'  => substr($slug, 0, 120),
+        'cover' => (string) ($b['cover'] ?? ''),
+        'sort'  => (int) ($b['sort'] ?? 0),
+        'is_active' => (($b['is_active'] ?? 1) == 1 || (($b['is_active'] ?? 1) === true)) ? 1 : 0,
+    ];
+    if (array_key_exists('description', $b)) $out['description'] = (string) $b['description'];
+    elseif (array_key_exists('desc', $b)) $out['description'] = (string) $b['desc'];
+
+    $parent = isset($b['parent_id']) ? trim((string) $b['parent_id']) : '';
+    if ($parent === '' || $parent === '0') {
+        $out['parent_id'] = null;
+    } else {
+        if ($excludeId !== '' && $parent === $excludeId) fail('Категория не может быть родителем самой себя', 400);
+        if (!find_row('catalog_categories', $parent)) fail('Родительская категория не найдена', 400);
+        $out['parent_id'] = $parent;
+    }
+    return $out;
+}
+
+/**
+ * Category delete with safe cascade:
+ * - subcategories are promoted to the deleted category's parent;
+ * - products are promoted to the deleted category's parent when one exists,
+ *   otherwise deletion is refused so items never become unreachable.
+ */
+function handle_categories_delete(string $id): void
+{
+    $cat = find_row('catalog_categories', $id);
+    if (!$cat) fail('Not found', 404);
+    $parent = (string) ($cat['parent_id'] ?? '');
+
+    $prod = db()->prepare('SELECT COUNT(*) FROM catalog WHERE category_id = ?');
+    $prod->execute([$id]);
+    $n = (int) $prod->fetchColumn();
+    if ($n > 0 && $parent === '') {
+        fail("В категории $n товаров — сначала перенесите их в другую категорию", 409);
+    }
+
+    if ($parent !== '') {
+        if (!find_row('catalog_categories', $parent)) fail('Родительская категория не найдена', 409);
+        db()->prepare('UPDATE catalog SET category_id = ? WHERE category_id = ?')->execute([$parent, $id]);
+    }
+    db()->prepare('UPDATE catalog_categories SET parent_id = ? WHERE parent_id = ?')->execute([$parent === '' ? null : $parent, $id]);
+    db()->prepare('DELETE FROM catalog_categories WHERE id = ?')->execute([$id]);
+}
+
 function handle_crud(string $METHOD, array $col, array $seg): void
 {
     $table = $col['table'];
     $need  = $col['role'];
     $ent   = $col['entity'];
     $id    = $seg[1] ?? null;
+    $isCat = $ent === 'categories';
 
     if ($METHOD === 'GET' && $id === null) ok(collection_list($table));
     if ($METHOD === 'GET' && $id !== null) {
@@ -168,6 +258,7 @@ function handle_crud(string $METHOD, array $col, array $seg): void
 
     if ($METHOD === 'POST') {
         $b = read_body();
+        if ($isCat) $b = normalize_category_body($b);
         $row = collection_insert($table, $b);
         audit_log('create', $ent, $row['id']);
         ok($row, 200);
@@ -177,6 +268,7 @@ function handle_crud(string $METHOD, array $col, array $seg): void
         $row = find_row_or_slug($table, $id);
         if (!$row) fail('Not found', 404);
         $b = read_body();
+        if ($isCat) $b = normalize_category_body($b, $row['id']);
         $row = collection_update($table, $row['id'], $b);
         audit_log('update', $ent, $row['id']);
         ok($row);
@@ -185,7 +277,11 @@ function handle_crud(string $METHOD, array $col, array $seg): void
         if (!$id) fail('Not found', 404);
         $row = find_row_or_slug($table, $id);
         if (!$row) fail('Not found', 404);
-        collection_delete($table, $row['id']);
+        if ($isCat) {
+            handle_categories_delete($row['id']);
+        } else {
+            collection_delete($table, $row['id']);
+        }
         audit_log('delete', $ent, $row['id']);
         ok(true);
     }

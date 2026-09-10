@@ -44,7 +44,27 @@ function save_settings(array $data): array
     return $merged;
 }
 
-/** Simple JSON-col decoded helper (values already come decoded from db()). */
+/**
+ * Public catalog categories: only active ones, sorted by sort/title.
+ * Standalone — depends only on all_rows(), not on api/v1/crud.php (public_rows).
+ */
+function public_categories(): array
+{
+    try {
+        $cats = all_rows('catalog_categories');
+    } catch (\Throwable $e) {
+        return [];
+    }
+    $cats = array_values(array_filter($cats, function ($r) {
+        return (int) ($r['is_active'] ?? 1) === 1;
+    }));
+    usort($cats, function ($a, $b) {
+        $s = (int) ($a['sort'] ?? 0) <=> (int) ($b['sort'] ?? 0);
+        if ($s !== 0) return $s;
+        return strcasecmp((string) ($a['title'] ?? ''), (string) ($b['title'] ?? ''));
+    });
+    return $cats;
+}
 
 /** Absolute site origin (scheme://host) for canonical/sitemap/robots URLs. */
 function meb_origin(): string

@@ -5,6 +5,7 @@ const cols = [
   { id: 'dashboard', icon: '📊', label: 'Главная', g: 'main' },
   { id: 'pages',     icon: '📄', label: 'Страницы', g: 'content' },
   { id: 'catalog',   icon: '🪑', label: 'Каталог', g: 'content' },
+  { id: 'categories', icon: '🗂️', label: 'Категории', g: 'content' },
   { id: 'projects',  icon: '🏗️', label: 'Проекты', g: 'content' },
   { id: 'materials', icon: '🧱', label: 'Материалы', g: 'content' },
   { id: 'services',  icon: '🛠️', label: 'Услуги', g: 'content' },
@@ -395,11 +396,12 @@ async function nav(id) {
   if (id === 'system') return renderSystem(list);
   if (id === 'menu_items') return renderMenuItems(list);
   if (id === 'banners') return renderBanners(list);
+  if (id === 'categories') return renderCategories(list);
   return renderCrud(id, list);
 }
 
 function showQuickAdd() {
-  const quickCols = ['projects', 'catalog', 'materials', 'services'];
+  const quickCols = ['projects', 'catalog', 'categories', 'materials', 'services'];
   if (quickCols.includes(cur)) showForm(cur);
   else nav('projects');
 }
@@ -984,6 +986,7 @@ async function toggleReview(id, approve) {
 function showForm(col, data = {}) {
   const box = el('formBox');
   box.style.display = '';
+  if (col === 'categories') { showCategoryForm(data.id || null); return; }
   const isUser = col === 'users';
   const isLead = col === 'leads';
   const isReview = col === 'reviews';
@@ -1027,7 +1030,8 @@ function showForm(col, data = {}) {
     </div>
     <div class="grid2" style="margin-top:12px">
       <div><label>Цена</label><input id="f_price" class="input" type="number" value="${esc(data.price || '')}"></div>
-      <div><label>Категория (ID)</label><input id="f_category_id" class="input" value="${esc(data.category_id || '')}"></div>
+      <div><label>Категория</label><select id="f_category_id" class="input"><option value="">— Без категории —</option></select>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px">Категории создаются и редактируются в разделе «Категории».</div></div>
     </div>
     <label style="margin-top:12px">Описание</label><textarea id="f_desc" class="input" rows="3">${esc(data.description || data.desc || '')}</textarea>
     <div class="grid2" style="margin-top:12px">
@@ -1117,6 +1121,7 @@ function showForm(col, data = {}) {
   box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   if (col === 'catalog') imagePickerRowOnChange('f_cover');
   if (col === 'materials') imagePickerRowOnChange('f_image');
+  if (col === 'catalog') fillCategorySelect('f_category_id', data.category_id || '');
 }
 
 async function editItem(col, id) {
@@ -1170,6 +1175,126 @@ async function saveForm(col, id) {
   else res = await jpost('/api/v1/' + col, body);
   if (res.ok) { el('formBox').style.display = 'none'; nav(cur); toast('Сохранено', 'success'); }
   else toast((res.data && res.data.error) || 'Ошибка', 'error');
+}
+
+/* ============ CATEGORIES ============ */
+async function renderCategories(list) {
+  const items = await jget('/api/v1/categories') || [];
+  const catalog = await jget('/api/v1/catalog') || [];
+  const counts = {};
+  (catalog || []).forEach(c => { counts[c.category_id || ''] = (counts[c.category_id || ''] || 0) + 1; });
+  const byId = {};
+  (items || []).forEach(c => { byId[c.id] = c; });
+  items.sort((a, b) => (parseInt(a.sort) || 0) - (parseInt(b.sort) || 0) || String(a.title || '').localeCompare(String(b.title || ''), 'ru'));
+  list.innerHTML = `<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--brass);margin-bottom:4px">Категории</div>
+        <b style="font-size:15px">Категории каталога · ${items.length}</b>
+      </div>
+      <button class="btn btn-sm" onclick="showCategoryForm()">+ Добавить категорию</button>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-top:6px">Скрытые категории не показываются на сайте. Публичный адрес: /catalog/{slug}</div>
+    <table style="margin-top:14px">
+      <thead><tr><th>Категория</th><th>Родитель</th><th>Slug</th><th>Товары</th><th>Порядок</th><th>Статус</th><th></th></tr></thead>
+      <tbody>${items.map(c => {
+        const parent = c.parent_id ? ((byId[c.parent_id] || {}).title || c.parent_id) : '—';
+        return `<tr style="${c.is_active == 0 ? 'opacity:.55' : ''}">
+          <td><b>${esc(c.title || c.slug || c.id)}</b></td>
+          <td style="color:var(--muted)">${esc(parent)}</td>
+          <td style="color:var(--muted)">${esc(c.slug || '')}</td>
+          <td>${counts[c.id || ''] || 0}</td>
+          <td>${parseInt(c.sort) || 0}</td>
+          <td><span class="badge ${c.is_active == 0 ? 'badge-warning' : 'badge-success'}">${c.is_active == 0 ? 'Скрыта' : 'Активна'}</span></td>
+          <td>
+            <button class="btn btn-sm btn-ghost" onclick="showCategoryForm('${esc(c.id)}')">Изм.</button>
+            <button class="btn btn-sm btn-danger" style="padding:4px 8px" onclick="delItem('categories','${esc(c.id)}')">✕</button>
+          </td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="7" class="empty-state">Нет категорий. Создайте первую!</td></tr>'}</tbody>
+    </table>
+  </div>`;
+}
+
+async function showCategoryForm(id) {
+  let data = {};
+  if (id) {
+    const items = await jget('/api/v1/categories');
+    data = (items || []).find(x => x.id === id) || {};
+  }
+  const cats = await jget('/api/v1/categories') || [];
+  buildCategoryForm(data, cats);
+}
+
+function buildCategoryForm(data, cats) {
+  const box = el('formBox');
+  box.style.display = '';
+  const parentOpts = '<option value="">— Без родителя —</option>' + cats
+    .filter(c => c.id !== data.id)
+    .map(c => `<option value="${esc(c.id)}" ${data.parent_id === c.id ? 'selected' : ''}>${esc(c.title || c.slug || c.id)}</option>`).join('');
+  const activeVal = dv(data.is_active, 1);
+  const parentLabel = data.parent_id ? ((cats.find(c => c.id === data.parent_id) || {}).title || data.parent_id) : '—';
+  box.innerHTML = `<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+    <button class="btn btn-sm btn-ghost" onclick="el('formBox').style.display='none'">← Назад</button>
+    <b style="font-size:15px">${data.id ? 'Редактировать категорию' : 'Новая категория'}</b>
+  </div>
+  <div class="grid2">
+    <div><label>Название</label><input id="f_cat_title" class="input" value="${esc(data.title || '')}" placeholder="Кухни"></div>
+    <div><label>Slug (адрес /catalog/…)</label><input id="f_cat_slug" class="input" value="${esc(data.slug || '')}" placeholder="kuhni"></div>
+  </div>
+  <div class="grid2" style="margin-top:12px">
+    <div><label>Родительская категория</label><select id="f_cat_parent" class="input">${parentOpts}</select>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px">${data.id ? 'Текущий родитель: ' + esc(parentLabel) : 'Оставьте пустым для корневой категории'}</div></div>
+    <div><label>Статус</label><select id="f_cat_active" class="input">
+      <option value="1" ${activeVal == 1 ? 'selected' : ''}>Активна (публикуется)</option>
+      <option value="0" ${activeVal == 0 ? 'selected' : ''}>Скрыта</option>
+    </select></div>
+  </div>
+  <label style="margin-top:12px">Описание</label><textarea id="f_cat_desc" class="input" rows="2">${esc(data.description || '')}</textarea>
+  <div class="grid2" style="margin-top:12px">
+    <div>${imagePickerRow('f_cat_cover', data.cover || '', 'Обложка категории')}</div>
+    <div><label>Порядок сортировки</label><input id="f_cat_sort" class="input" type="number" value="${esc(dv(data.sort, '0'))}">
+      <div style="font-size:12px;color:var(--muted);margin-top:6px">Меньше = выше в списке каталога</div></div>
+  </div>
+  <div style="margin-top:16px;display:flex;gap:8px;align-items:center">
+    <button class="btn" onclick="saveCategory('${data.id || ''}')">Сохранить</button>
+    <button class="btn btn-ghost" onclick="el('formBox').style.display='none'">Отмена</button>
+    <span id="formMsg" style="font-size:13px"></span>
+  </div>`;
+  box.dataset.col = 'categories';
+  box.dataset.id = data.id || '';
+  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  imagePickerRowOnChange('f_cat_cover');
+}
+
+async function saveCategory(id) {
+  const body = {
+    title: el('f_cat_title').value,
+    slug: el('f_cat_slug').value.trim(),
+    parent_id: el('f_cat_parent').value,
+    description: el('f_cat_desc').value,
+    cover: el('f_cat_cover').value.trim(),
+    sort: parseInt(el('f_cat_sort').value) || 0,
+    is_active: el('f_cat_active').value === '1' ? 1 : 0
+  };
+  if (!body.title) { toast('Введите название', 'error'); return; }
+  let res;
+  if (id) res = await jput('/api/v1/categories/' + id, body);
+  else res = await jpost('/api/v1/categories', body);
+  if (res.ok) { el('formBox').style.display = 'none'; nav('categories'); toast('Сохранено', 'success'); }
+  else toast((res.data && res.data.error) || 'Ошибка', 'error');
+}
+
+async function fillCategorySelect(selId, current) {
+  const sel = el(selId);
+  if (!sel) return;
+  const cats = await jget('/api/v1/categories') || [];
+  const known = (cats || []).map(c => c.id).indexOf(current || '') !== -1;
+  let opts = '<option value="">— Без категории —</option>' + (cats || []).map(c =>
+    `<option value="${esc(c.id)}" ${c.id === current ? 'selected' : ''}>${esc(c.title || c.slug || c.id)}</option>`
+  ).join('');
+  if (current && !known) opts += `<option value="${esc(current)}" selected>${esc(current)}</option>`;
+  sel.innerHTML = opts;
 }
 
 /* ============ MENU ITEMS ============ */

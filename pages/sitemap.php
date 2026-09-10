@@ -9,7 +9,7 @@ echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
 // Absolute origin: configured base_url, else scheme-prefixed HTTP_HOST.
 // Empty MEB_BASE_URL used to produce relative <loc> entries (spec-invalid).
 $base = meb_origin();
-$categories = collection_list('catalog_categories');
+$categories = public_categories();
 
 $add = function (string $loc, string $changefreq = 'weekly', string $priority = '0.8') use ($base) {
     echo '<url><loc>' . e($base . $loc) . '</loc><changefreq>' . $changefreq . '</changefreq><priority>' . $priority . '</priority></url>' . "\n";

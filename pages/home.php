@@ -11,7 +11,7 @@ $reviews   = array_values(array_filter(collection_list('reviews'), function ($r)
     // approved is TINYINT 0/1 — only 1 counts as published.
     return (int) ($r['approved'] ?? 0) === 1;
 }));
-$categories_list = collection_list('catalog_categories');
+$categories_list = public_categories();
 $categories_map = [];
 $categories_title = [];
 foreach ($categories_list as $cl) {
@@ -23,7 +23,11 @@ usort($projects, function ($a, $b) {
     return ($b['created_at'] ?? '') <=> ($a['created_at'] ?? '');
 });
 $featured_projects = array_slice($projects, 0, 6);
-$featured_catalog = array_slice($catalog, 0, 6);
+// Items attached to a valid active category only (no dead /catalog/../* links).
+$featured_catalog = array_values(array_filter($catalog, function ($c) use ($categories_map) {
+    return isset($categories_map[(string) ($c['category_id'] ?? '')]);
+}));
+$featured_catalog = array_slice($featured_catalog, 0, 6);
 $photoBandImg = '';
 foreach ($featured_projects as $p) {
     $img = first_image($p);

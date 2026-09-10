@@ -61,11 +61,15 @@ CREATE TABLE IF NOT EXISTS catalog_categories (
   title      VARCHAR(255) DEFAULT '',
   description TEXT        DEFAULT NULL,
   cover      VARCHAR(255) DEFAULT '',
+  parent_id  VARCHAR(20)  DEFAULT NULL,
+  is_active  TINYINT(1)   DEFAULT 1,
   sort       INT          DEFAULT 0,
   created_at DATETIME     DEFAULT NULL,
   updated_at DATETIME     DEFAULT NULL,
   PRIMARY KEY (id),
-  UNIQUE KEY uq_cat_slug (slug)
+  UNIQUE KEY uq_cat_slug (slug),
+  KEY idx_cat_parent (parent_id),
+  KEY idx_cat_active (is_active)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -------------------------------------------------------------

@@ -17,7 +17,7 @@ function handle_seo(string $what): void
         foreach (public_rows('projects') as $p) {
             $urls[] = '/project/' . rawurlencode($p['slug']);
         }
-        foreach (collection_list('catalog_categories') as $c) {
+        foreach (public_categories() as $c) {
             $urls[] = '/catalog/' . rawurlencode($c['slug']);
         }
         foreach (public_rows('catalog') as $i) {

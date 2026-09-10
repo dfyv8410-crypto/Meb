@@ -3,8 +3,14 @@
 
 require_once __DIR__ . '/layout.php';
 
-$categories = collection_list('catalog_categories');
-$catalog    = public_rows('catalog');
+$categories = public_categories();
+$catById = [];
+foreach ($categories as $cat) $catById[(string) ($cat['id'] ?? '')] = $cat;
+// Only items attached to an existing (active) category are listed publicly —
+// otherwise the hub would emit links that 404.
+$catalog = array_values(array_filter(public_rows('catalog'), function ($row) use ($catById) {
+    return isset($catById[(string) ($row['category_id'] ?? '')]);
+}));
 
 layout_head('Каталог', 'Кухни, гардеробные, гостиные, спальни, кабинеты и решения для бизнеса.');
 layout_nav('catalog');

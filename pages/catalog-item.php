@@ -6,7 +6,7 @@ require_once __DIR__ . '/layout.php';
 $cat  = $_MEB_CAT;
 $slug = $_MEB_SLUG ?? null;
 
-$categories = collection_list('catalog_categories');
+$categories = public_categories();
 $catalog    = public_rows('catalog');
 
 $catRow = null;

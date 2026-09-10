@@ -95,7 +95,7 @@ function meb_nav_categories(): array
 {
     $cats = [];
     try {
-        $cats = collection_list('catalog_categories');
+        $cats = public_categories();
         if (is_array($cats)) {
             usort($cats, function ($a, $b) { return (int) ($a['sort'] ?? 0) <=> (int) ($b['sort'] ?? 0); });
         }
