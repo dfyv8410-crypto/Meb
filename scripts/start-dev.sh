@@ -14,7 +14,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PORT="${PORT:-8099}"
 HOST="${HOST:-127.0.0.1}"
 SOCK="${MYSQL_SOCK:-/var/run/mysqld/mysqld.sock}"
-PIDF="${TMPDIR:-/tmp}/meb-php-serve.pid"
+PIDF="$ROOT/storage/dev/php-serve.pid"
 
 # ---- pick a working PHP binary (this sandbox needs LD_LIBRARY_PATH cleared) ----
 PHP_BIN="${PHP:-}"
@@ -35,10 +35,11 @@ ensure_db() {
   echo -n "Starting MariaDB/MySQL ... "
   (service mysql start || service mariadb start) >/dev/null 2>&1
   for _ in $(seq 1 30); do db_up && { echo "ok"; return 0; }; sleep 1; done
-  # fallback: run mysqld directly (common inside containers/sandboxes)
+  # fallback: run mysqld directly (common inside containers/sandboxes).
+  # setsid detaches it into its own session so it survives the launching shell.
   if [ -x /usr/sbin/mysqld ]; then
-    nohup mysqld --socket="$SOCK" --skip-networking \
-      > "${TMPDIR:-/tmp}/meb-mysqld.log" 2>&1 &
+    setsid mysqld --socket="$SOCK" --skip-networking \
+      > "${TMPDIR:-/tmp}/meb-mysqld.log" 2>&1 < /dev/null &
     for _ in $(seq 1 40); do db_up && { echo "ok (direct mysqld)"; return 0; }; sleep 1; done
   fi
   echo "FAILED — install/start MariaDB, then retry."; return 1
@@ -52,14 +53,12 @@ start_php() {
     return 2
   fi
   cd "$ROOT" || return 1
-  # shellcheck disable=SC2086
-  $PHP_BIN -S "$HOST:$PORT" scripts/dev-router.php \
-    > "$ROOT/storage/dev/php-serve.log" 2>&1 &
-  SRV=$!
-  echo "$SRV" > "$PIDF"
+  # setsid: own session/sid so the server survives the launching shell.
+  setsid bash -c "echo \$\$ > '$PIDF'; exec $PHP_BIN -S '$HOST:$PORT' scripts/dev-router.php" \
+    > "$ROOT/storage/dev/php-serve.log" 2>&1 < /dev/null &
   for _ in $(seq 1 30); do
     if $PHP_BIN -r '$c=@file_get_contents("http://127.0.0.1:'"$PORT"'/robots.txt");echo $c?1:0;' 2>/dev/null | grep -q 1; then
-      echo "Server ready → http://$HOST:$PORT/  (pid $SRV)"
+      echo "Server ready → http://$HOST:$PORT/  (pid $(cat "$PIDF"))"
       return 0
     fi
     sleep 0.5
