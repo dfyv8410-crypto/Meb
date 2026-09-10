@@ -1579,6 +1579,7 @@ textarea.input { resize: vertical; min-height: 110px; }
 }
 @media (max-width: 720px) {
   .grid.cols3, .grid.cols2 { grid-template-columns: 1fr; }
+  .grid-editorial { grid-template-columns: 1fr; }
   .grid-editorial .card, .grid-editorial .card:nth-child(6n+1),
   .grid-editorial .card:nth-child(6n+2), .grid-editorial .card:nth-child(6n+3),
   .grid-editorial .card:nth-child(6n+4), .grid-editorial .card:nth-child(6n+5),
